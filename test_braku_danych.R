@@ -5,6 +5,8 @@ HR <- read_csv("HR.csv")
 
 install.packages("naniar")
 install.packages("visdat")
+install.packages("Amelia")
+library(Amelia)
 library(naniar)
 library(visdat)
 
