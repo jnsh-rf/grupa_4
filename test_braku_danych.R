@@ -4,7 +4,9 @@ HR <- read_csv("HR.csv")
 # View(HR)
 
 install.packages("naniar")
+install.packages("visdat")
 library(naniar)
+library(visdat)
 
 #wszystkie brakujące obserwacje - brakuje 400
 n_miss(HR)
@@ -19,6 +21,8 @@ miss_case_table(HR)
 
 #wizualizacja braków
 vis_miss(HR)
+vis_dat(HR)
+?naniar
 #wstępnie - wyglądają na przypadkowe braki (brak "skupisk" braków)
 #zgrupowane po wierszach z brakami i uporządkowanie kolumn w kolejności brakujących
 vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
