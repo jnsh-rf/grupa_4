@@ -84,6 +84,14 @@ por_imp1 <- data.frame(age_orig = HR$Age, att_orig = HR$Attrition, moi_orig = HR
                        age_impu = impu$Age, att_impu = impu$Attrition, moi_impu = impu$MonthlyIncome,
                        mm = missMatrix)
 
+# wykres pokazujący jak kształtują się wartości imputowane względem wartości rzeczywistych
+ggplot(por_imp1, aes(x = age_orig, y = age_impu, color = missing)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Porównanie oryginalnych i imputowanych wartości",
+       x = "Oryginalne wartości",
+       y = "Imputowane wartości") +
+  scale_color_manual(values = c("black", "red"), labels = c("Oryginalne", "Imputowane")) +
+  theme_minimal()
 
 ggplot(por_imp1, aes(x = age_orig, y = age_impu, color = missing)) +
   geom_point(alpha = 0.7) +
