@@ -6,9 +6,13 @@ HR <- read_csv("HR.csv")
 install.packages("naniar")
 install.packages("visdat")
 install.packages("Amelia")
+install.packages("dlookr")
+install.packages("rstatix")
 library(Amelia)
 library(naniar)
 library(visdat)
+library(dlookr)
+library(rstatix)
 
 ?amelia
 
@@ -113,3 +117,20 @@ ggplot(comparison, aes(x = population_original, y = population_imputed, color = 
   scale_color_manual(values = c("black", "red"), labels = c("Oryginalne", "Imputowane")) +
   theme_minimal()
 is.na
+
+table(HR$Attrition)
+hr_factors <- HR %>%
+  factor(HR$Attrition, ifelse(HR$Attrition %in% ("No"), 0, 1),
+         levels = c(0, 1), labels = c("No", "Yes"))
+
+# przeobi na  0, 1 zrobic labels dla no yes  
+
+m_kor_hr <- cor_mat(
+  HR,
+  method = "pearson",
+  alternative = "two.sided",
+  conf.level = 0.95
+)
+
+
+age_i <- round(imputate_na(HR, ))
