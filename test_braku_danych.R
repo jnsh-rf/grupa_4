@@ -134,3 +134,10 @@ m_kor_hr <- cor_mat(
 
 
 age_i <- round(imputate_na(HR, ))
+
+# przerobic chr na num (factor) 
+# stworzyć macierz korelacji
+# na podstawoie wartosci najbardziej skorelowanych do zminnych age, attrition imputowac (yvar)
+# + monthly income jako godziny * stawka
+# zrobic wykres czy sie pokrywaj/sa zblizone
+# jesli tak podstawic jako na przy pomocy replace_na, jezeli nie to inna metoda
