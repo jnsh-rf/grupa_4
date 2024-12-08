@@ -135,9 +135,126 @@ m_kor_hr <- cor_mat(
 
 age_i <- round(imputate_na(HR, ))
 
-# przerobic chr na num (factor) 
-# stworzyć macierz korelacji
+### przerobic chr na num (factor) 
+
+#sprawdzamy unikatowe wartości zmiennych "tekstowych"
+all_char_values <- list(
+  val_1 = table(HR$Attrition),
+  val_2 = table(HR$BusinessTravel),
+  val_3 = table(HR$Department),
+  val_4 = table(HR$EducationField),
+  val_5 = table(HR$Gender),
+  val_6 = table(HR$JobRole),
+  val_7 = table(HR$MaritalStatus),
+  val_8 = table(HR$Over18),
+  val_9 = table(HR$OverTime)
+)
+
+#uproszczenie listy all_char_values
+kategorie <- lapply(all_char_values, names)
+
+HR_factor <- HR %>%
+  mutate(
+    Attrition = factor(Attrition, levels = kategorie$val_1), 
+    BusinessTravel = factor(BusinessTravel, levels = kategorie$val_2),
+    Department = factor(Department, levels = kategorie$val_3),
+    EducationField = factor(EducationField, levels = kategorie$val_4),
+    Gender = factor(Gender, levels = kategorie$val_5),
+    JobRole = factor(JobRole, levels = kategorie$val_6),
+    MaritalStatus = factor(MaritalStatus, levels = kategorie$val_7),
+    Over18 = factor(Over18, levels = kategorie$val_8),
+    OverTime = factor(OverTime, levels = kategorie$val_9)
+  )
+
+#weryfikacja - w razie czego odkomentować
+#str(HR_factor_V2)
+
+### stworzyć macierz korelacji
+
+# dla wartości numerycznych
+numeric_HR <- HR %>% select(where(is.numeric))
+
+macierz_kor_numeric <- cor_mat(
+  numeric_HR,
+  method = "pearson",
+  alternative = "two.sided",
+  conf.level = 0.95
+)
+
+# uwzględnienie factor po ich przekodowaniu
+factor_HR <- HR_factor %>%
+  mutate(across(where(is.factor), ~ as.numeric(as.factor(.))))
+
+macierz_kor_factor <- cor_mat(
+  factor_HR,
+  method = "pearson",
+  alternative = "two.sided",
+  conf.level = 0.95
+)
+
+#wizualizacja korelacji
+#install.packages("ggcorrplot")
+#library(ggcorrplot)
+
+ggcorrplot(macierz_kor_numeric)
+ggcorrplot(macierz_kor_factor)
+
+View(macierz_kor_factor)
+# Extract the rows corresponding to Age, Attrition, and MonthlyIncome
+istotne_kor_factor <- macierz_kor_factor[c("Age", "Attrition", "MonthlyIncome"), ]
+
+
+# 1470, 35
+# Step 1: Add row names as a column and select the desired columns
+istotne_kor_factor1 <- macierz_kor_factor %>%
+  rownames_to_column(var = "kor_wzgledem") %>%
+  select(kor_wzgledem, Age, Attrition, MonthlyIncome)
+
+# Step 2: Pivot the table to make columns into rows and rows into columns
+istotne_kor_factor1_long <- istotne_kor_factor1 %>%
+  pivot_longer(cols = -kor_wzgledem, names_to = "variable", values_to = "value")
+
+# Step 3: Extract rows into separate vectors
+age_vector <- istotne_kor_factor%>% filter( Age) 
+att_vector <- istotne_kor_factor1_long %>% filter(Attrition)
+monthly_income_vector <- istotne_kor_factor1_long %>% filter(MonthlyIncome)
+
+
+
+
+
+# Find the strongest correlation for each variable (excluding self-correlation)
+silne_kor_factor <- apply(istotne_kor_factor, 1, function(x) {
+  max(abs(x[-which(names(x) %in% c("Age", "Attrition", "MonthlyIncome"))]))
+})
+
+# Get the names of the variables with the strongest correlations
+silne_kor_factor_names <- names(silne_kor_factor)
+
+# Print the result
+print(silne_kor_factor_names)
+
+mx_kor_czyste <- macierz_kor_factor[rowSums(!is.na(macierz_kor_factor)) > 1, colSums(!is.na(macierz_kor_factor)) > 0] %>%
+  column_to_rownames("rowname")
+# identyfikacja niepotrzebnych kolumn na podstawie korelacji Pearsona (zarówno char zmienionych na factor, jak i numerycznych), gdyż zmienna przyjmuje tylko jedną wartość
+zm_zbedne_V1 <- setdiff(colnames(macierz_kor_factor), colnames(df_korelacja_czyste))
+# w razporcie w teksie pod ramką zamiscic tylko paste
+print(paste("Usunięto zmienne", paste(zm_zbedne_V1, collapse = ", "), "ze względu na wynikające ze wzoru na korelacje Pearsona właściwosci"))
+
+wiersze_braki <- c("Age", "Attrition", "MonthlyIncome")
+
+# Save as separate vectors
+age_vector <- kor_missing_var %>% filter("Age") %>% pull(1)
+att_vector <- kor_missing_var %>% filter("Attrition") %>% pull(1)
+moi_vector <- kor_missing_var %>% filter("MonthlyIncome") %>% pull(1)
+braki_danych_age <- braki_danych %>% select(Age)
+
 # na podstawoie wartosci najbardziej skorelowanych do zminnych age, attrition imputowac (yvar)
 # + monthly income jako godziny * stawka
 # zrobic wykres czy sie pokrywaj/sa zblizone
 # jesli tak podstawic jako na przy pomocy replace_na, jezeli nie to inna metoda
+
+
+
+
+### przewidziec attrition na pdst regresji logistycznej
