@@ -216,5 +216,34 @@ ggcorrplot(macierz_kor_numeric)
 ```
 
 ```{r zn_naj_skor, echo=TRUE}
+mxkor_missing_var <- macierz_kor_numeric %>%
+  column_to_rownames("rowname")
+
+mxkor_age <- mxkor_missing_var %>%
+  select(Age) %>%
+  na.omit() %>%
+  arrange(desc(abs(Age))) %>%
+  filter(Age != 1)
+
+mxkor_att <- mxkor_missing_var %>%
+  select(Attrition) %>%
+  na.omit() %>%
+  arrange(desc(abs(Attrition))) %>%
+  filter(Attrition != 1)
+
+mxkor_moi <- mxkor_missing_var %>%
+  select(MonthlyIncome) %>%
+  na.omit() %>%
+  arrange(desc(abs(MonthlyIncome))) %>%
+  filter(MonthlyIncome != 1)
 
 ```
+
+Na podstawie macierzy korelacji możemy stwierdzić, że zmienna Age skorelowana
+jest najsilniej z trzema zmiennymi - TotalWorkingYears (0.68), JobLevel (0.51)
+oraz MonthlyIncome (0.49), natomiast MonthlyIncome ze zmiennymi JobLevel (0.95),
+TotalWorkingYears (0.77), YearsAtCompany (0.51) oraz Age (0.49). Możemy je tym
+samym uznać za zmienne, wykorzystane do imputacji.
+
+Zmienna Attrition natomist nie jest zbyt mocno skorelowana z żadną ze zmiennych,
+której to wartości absolutne znajdują się w przedziale [0,0052 - 0,18].
