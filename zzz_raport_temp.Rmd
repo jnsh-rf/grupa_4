@@ -1,0 +1,204 @@
+---
+title: "Imputacja braków danych"
+#subtitle: "Czyszczenie danych"
+author: "Paweł Gwozdowski, Wiktoria Itrych, Wiktoria Gawryszczak"
+date: Opublikowane `r format(Sys.time(), "%A %d %B %Y")`
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    toc_float: true
+    toc_depth: 4
+editor_options: 
+  markdown: 
+    wrap: 80
+---
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+options(scipen = 999, digits=6) 
+# Lista bibliotek
+libraries <- c(
+  "rmdformats", "validate", "validatetools", "dcmodify",
+  "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
+  "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
+  "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
+  "kableExtra", "DT"
+)
+
+packages <- c("skimr", "GGally", "plotly", "viridis", "caret", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "ggplot2", "ggthemes", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "RColorBrewer", "plotrix", "ggrepel", "forcats", "reshape2", "caTools", "tree", "rattle")
+
+# Funkcja do instalacji i wczytania bibliotek
+install_and_load <- function(lib) {
+  if (!require(lib, character.only = TRUE)) {
+    install.packages(lib, dependencies = TRUE)
+    suppressMessages(library(lib, character.only = TRUE))
+  }
+}
+
+# Iteracja przez listę bibliotek
+invisible(sapply(libraries, function(lib) {
+  if (lib == "ggplot2") {
+    options(device = "null")
+    install_and_load(lib)
+    options(device = "default")
+  } else {
+    install_and_load(lib)
+  }
+}))
+```
+
+## Opis projektu
+
+Odejścia pracowników prowadzą do znacznych kosztów dla firmy, w tym kosztów
+zakłóceń w działalności, zatrudniania i szkolenia nowych pracowników. W związku
+z tym istnieje duże zainteresowanie HR zrozumieniem czynników wpływających na
+odejścia pracowników i ich minimalizacją.
+
+Analityka pomaga nam w interpretacji danych organizacyjnych. Znajduje trendy
+związane z ludźmi w danych i pozwala działowi HR podjąć odpowiednie kroki, aby
+organizacja działała sprawnie i przynosiła zyski. Odchodzienie pracowników w
+korporacji jest jednym ze złożonych wyzwań, z którymi muszą sobie radzić
+menedżerowie i pracownicy HR. Celem projektu jest tym samym przewidywanie odejść
+pracowników.
+
+## Struktura danych
+
+```{R dane, message=FALSE, warning=FALSE, include=FALSE}
+HR <- read_csv("HR.csv")
+```
+
+Zbiór danych **HR** zawiera informacje dotyczące 1,470 obecnych i byłych
+pracowników, w tym związane z ich satysfakcją z pracy, równowagą między życiem
+zawodowym a prywatnym, stażem pracy, doświadczeniem, wynagrodzeniem i danymi
+demograficznymi.
+
+```{R str_danych, echo=TRUE}
+glimpse(HR)
+
+invisible(n_miss(HR))
+invisible(prop_miss(HR))
+brak_wart <- tibble(miss_var_summary(HR))
+brak_wart
+miss_case_table(HR)
+
+```
+
+Zbiór składa się z 1470 obserwacji (wierszy) oraz 35 zmiennych (kolumn). W tym
+zbiorze danych mamy tylko dwa typy danych: numeric oraz character.
+
+W zbiorze danych brakuje 400 zmiennych, co stanowi 0,7774% wszystkich zmiennych.
+331 rzedów cechuje się brakiem jednej ze zmiennych, 33 rzedy dwoma brakami oraz
+w 1 rzędzie brakuje wartości dla 3 zmiennych.
+
+Przewidywane odejście pracowników ”Attrition” stanowić będą zmienną objaśnianą.
+Ze względu na fakt, iż jest to zmienna typu *character*, w dalszych krokach
+przekodowana zostanie ona na zmienną typu *factor*.
+
+## Wizualizacja braku danych
+
+
+
+``` {R }
+vis_miss(HR)
+vis_dat(HR)
+#zgrupowane po wierszach z brakami i uporządkowanie kolumn w kolejności brakujących
+vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
+gg_miss_fct(HR, fct = JobSatisfaction)
+#wizualizacja współwystępowania braków, brakuje w 3 kolumnach, stąd nsets = 3
+gg_miss_upset(HR, nsets = 3)
+```
+
+```{R dane_zzz, echo=FALSE}
+
+
+HR %>%
+  kbl( 
+    align = rep("r", ncol(HR)),
+    booktabs = TRUE,
+    longtable = TRUE,
+    format = "html"
+  ) %>%
+  kable_styling(
+    full_width = FALSE, 
+    position = "center", # Centers the table
+    bootstrap_options = c("striped", "hover", "condensed")
+  ) %>%
+  add_header_above(c("TABELA 1.1: Dane pracowników" = 35), bold = TRUE, align = "center")
+
+library(kableExtra)
+library(DT)
+
+# ... your code ...
+library(DT)
+
+# Assuming you have a d"ata frame named "HR"
+datatable(HR, filter = "none", options = list(pageLength = 10))
+HR %>%
+  kbl(
+    align = rep("r", ncol(HR)),
+    booktabs = TRUE,
+    longtable = TRUE,
+    format = "html") %>%
+  kable_styling(
+    full_width = FALSE, 
+    position = "center", 
+    bootstrap_options = c("striped", "hover", "condensed")) %>%
+  add_header_above(
+    c("TABELA 1.1: Dane pracowników" = 35),
+    bold = TRUE, 
+    align = "center")
+
+```
+
+```{R mac_kor, eval=FALSE, include=FALSE}
+HR <- read_csv("HR.csv")
+
+#sprawdzamy unikatowe wartości zmiennych "tekstowych"
+all_char_values <- list(
+  val_1 = table(HR$Attrition),
+  val_2 = table(HR$BusinessTravel),
+  val_3 = table(HR$Department),
+  val_4 = table(HR$EducationField),
+  val_5 = table(HR$Gender),
+  val_6 = table(HR$JobRole),
+  val_7 = table(HR$MaritalStatus),
+  val_8 = table(HR$Over18),
+  val_9 = table(HR$OverTime)
+)
+
+#uproszczenie listy all_char_values
+kategorie <- lapply(all_char_values, names)
+
+HR_factor <- HR %>%
+  mutate(
+    Attrition = factor(Attrition, levels = kategorie$val_1), 
+    BusinessTravel = factor(BusinessTravel, levels = kategorie$val_2),
+    Department = factor(Department, levels = kategorie$val_3),
+    EducationField = factor(EducationField, levels = kategorie$val_4),
+    Gender = factor(Gender, levels = kategorie$val_5),
+    JobRole = factor(JobRole, levels = kategorie$val_6),
+    MaritalStatus = factor(MaritalStatus, levels = kategorie$val_7),
+    Over18 = factor(Over18, levels = kategorie$val_8),
+    OverTime = factor(OverTime, levels = kategorie$val_9)
+  )
+
+factor_HR <- HR_factor %>%
+  mutate(across(where(is.factor), ~ as.numeric(as.factor(.))))
+
+macierz_kor_factor <- cor_mat(
+  factor_HR,
+  method = "pearson",
+  alternative = "two.sided",
+  conf.level = 0.95
+)
+
+mx_kor_czyste <- macierz_kor_factor[rowSums(!is.na(macierz_kor_factor)) > 1, colSums(!is.na(macierz_kor_factor)) > 0] %>%
+  column_to_rownames("rowname")
+mx_kor_czyste_2 <- macierz_kor_factor[rowSums(!is.na(macierz_kor_factor)) > 0, colSums(!is.na(macierz_kor_factor)) > 0] 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+zm_zbedne_V1 <- setdiff(colnames(macierz_kor_factor), colnames(mx_kor_czyste_2))
+#knitr::kable(mx_kor_czyste, format = "html") %>%
+ # kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+Zmienne `r paste(zm_zbedne_V1, collapse = ", ")` ze względu na wynikające ze wzoru
+na korelacje Pearsona właściwosci
+```
