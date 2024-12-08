@@ -63,7 +63,7 @@ pracowników.
 
 ## Struktura i opis danych
 
-```{R dane, message=FALSE, warning=FALSE, include=FALSE}
+```{r dane, message=FALSE, warning=FALSE, include=FALSE}
 HR <- read_csv("HR.csv")
 ```
 
@@ -74,7 +74,7 @@ demograficznymi.
 
 ### Struktura danych
 
-```{R str_danych, echo=TRUE}
+```{r str_danych, echo=TRUE}
 glimpse(HR)
 
 invisible(n_miss(HR))
@@ -98,7 +98,7 @@ przekodowana zostanie ona na zmienną typu *factor*.
 
 ### Statystyki opisowe - dokonczyc !!!
 
-```{R stat_op_HR, include=FALSE}
+```{r stat_op_HR, include=FALSE}
 summary(HR[, sapply(HR, is.numeric)])
 stop_hr
 ```
@@ -109,7 +109,7 @@ Graficzna prezentacja braku danych pozwala nam okreslić rozkład brakujących
 zmiennych, oraz wstępnie ocenić typ braku danych, przydatny do podjęcia
 następnych kroków.
 
-```{R }
+```{r echo=TRUE}
 vis_miss(HR)
 vis_dat(HR)
 #zgrupowane po wierszach z brakami i uporządkowanie kolumn w kolejności brakujących
@@ -129,7 +129,7 @@ danych w zmiennych współwystępują w:
 
 Zauważyć możemy również grupowanie się braków danych.
 
-```{R kor_brak, warning=FALSE}
+```{r kor_brak, warning=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
   geom_point() +
   geom_miss_point() +
@@ -145,9 +145,41 @@ brakami w tychże zmiennych.
 
 ### Tworzenie macierzy korelacji
 
-```{R mx_kor_numeric, echo=TRUE, message=FALSE, warning=FALSE}
-# usuwanie zmiennych nieliczbowych
-numeric_HR <- HR %>% select(where(is.numeric))
+```{r mx_kor_numeric, echo=TRUE, message=FALSE, warning=FALSE}
+#sprawdzamy unikatowe wartości zmiennych "tekstowych" - przenieść do osobnego bloku (tymczasowo potrzebny tutaj)
+all_char_values <- list(
+  val_1 = table(HR$Attrition),
+  val_2 = table(HR$BusinessTravel),
+  val_3 = table(HR$Department),
+  val_4 = table(HR$EducationField),
+  val_5 = table(HR$Gender),
+  val_6 = table(HR$JobRole),
+  val_7 = table(HR$MaritalStatus),
+  val_8 = table(HR$Over18),
+  val_9 = table(HR$OverTime)
+)
+
+#uproszczenie listy all_char_values
+kategorie <- lapply(all_char_values, names)
+
+HR_factor <- HR %>%
+  mutate(
+    Attrition = factor(Attrition, levels = kategorie$val_1), 
+    BusinessTravel = factor(BusinessTravel, levels = kategorie$val_2),
+    Department = factor(Department, levels = kategorie$val_3),
+    EducationField = factor(EducationField, levels = kategorie$val_4),
+    Gender = factor(Gender, levels = kategorie$val_5),
+    JobRole = factor(JobRole, levels = kategorie$val_6),
+    MaritalStatus = factor(MaritalStatus, levels = kategorie$val_7),
+    Over18 = factor(Over18, levels = kategorie$val_8),
+    OverTime = factor(OverTime, levels = kategorie$val_9)
+  )
+## pózniej naprawić i uproscic kod
+
+numeric_HR <- HR %>%
+  mutate(Attrition = factor(Attrition, levels = kategorie$val_1)) %>%
+  mutate(across(where(is.factor), as.numeric)) %>%
+  select(where(is.numeric))
 
 macierz_kor_numeric <- cor_mat(
   numeric_HR,
@@ -159,6 +191,11 @@ macierz_kor_numeric <- cor_mat(
 macierz_kor_numeric
 ```
 
+Przy tworzeniu macierzy korelacji dla zmiennych numerycznych uwzględniono
+dodatkoweo zmienną Attrition, po jej uprzednim przekodowaniu na *factor* a
+następnie na *numeric*, gdyż chcemy sprawdzić które zmienne są z nią najbardziej
+skorelowane.
+
 Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość
 korelacji. Wynika to z użytej metody, tj. współczynnika korelacji Pearsona o
 wzorze:
@@ -167,14 +204,17 @@ $$
 r = \frac{{}\sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \overline{x})^2  \sum_{i=1}^{n}(y_i - \overline{y})^2}}
 $$
 
-Brak wartości dla macierzy korelacji wynika tym samym z faktu, iż mianownik nie
-może przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna przyjmuje
-tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym
-samym zmienne te należałoby w następnym kroku usunąć.
+Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie może
+przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna przyjmuje tylko
+jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym samym
+zmienne te należałoby w następnym kroku usunąć.
 
 ### Graficzna prezentacja korelacji
 
-```{R}
+```{r echo=TRUE}
 ggcorrplot(macierz_kor_numeric)
 ```
 
+```{r zn_naj_skor, echo=TRUE}
+
+```
