@@ -61,7 +61,7 @@ korporacji jest jednym ze złożonych wyzwań, z którymi muszą sobie radzić
 menedżerowie i pracownicy HR. Celem projektu jest tym samym przewidywanie odejść
 pracowników.
 
-## Struktura danych
+## Struktura i opis danych
 
 ```{R dane, message=FALSE, warning=FALSE, include=FALSE}
 HR <- read_csv("HR.csv")
@@ -71,6 +71,8 @@ Zbiór danych **HR** zawiera informacje dotyczące 1,470 obecnych i byłych
 pracowników, w tym związane z ich satysfakcją z pracy, równowagą między życiem
 zawodowym a prywatnym, stażem pracy, doświadczeniem, wynagrodzeniem i danymi
 demograficznymi.
+
+### Struktura danych
 
 ```{R str_danych, echo=TRUE}
 glimpse(HR)
@@ -94,11 +96,20 @@ Przewidywane odejście pracowników ”Attrition” stanowić będą zmienną ob
 Ze względu na fakt, iż jest to zmienna typu *character*, w dalszych krokach
 przekodowana zostanie ona na zmienną typu *factor*.
 
+### Statystyki opisowe - dokonczyc !!!
+
+```{R stat_op_HR, include=FALSE}
+summary(HR[, sapply(HR, is.numeric)])
+stop_hr
+```
+
 ## Wizualizacja braku danych
 
+Graficzna prezentacja braku danych pozwala nam okreslić rozkład brakujących
+zmiennych, oraz wstępnie ocenić typ braku danych, przydatny do podjęcia
+następnych kroków.
 
-
-``` {R }
+```{R }
 vis_miss(HR)
 vis_dat(HR)
 #zgrupowane po wierszach z brakami i uporządkowanie kolumn w kolejności brakujących
@@ -108,97 +119,62 @@ gg_miss_fct(HR, fct = JobSatisfaction)
 gg_miss_upset(HR, nsets = 3)
 ```
 
-```{R dane_zzz, echo=FALSE}
+Na podstawie graficznej przezentacji braków danych możemy zauważyć, iż braki
+danych w zmiennych współwystępują w:
 
+-   Age i Attrition 12 razy;
+-   Attrition i MonthlyIncome 12 razy;
+-   Age i MonthlyIncome 9 razy;
+-   wszystkich razem tylko 1 raz.
 
-HR %>%
-  kbl( 
-    align = rep("r", ncol(HR)),
-    booktabs = TRUE,
-    longtable = TRUE,
-    format = "html"
-  ) %>%
-  kable_styling(
-    full_width = FALSE, 
-    position = "center", # Centers the table
-    bootstrap_options = c("striped", "hover", "condensed")
-  ) %>%
-  add_header_above(c("TABELA 1.1: Dane pracowników" = 35), bold = TRUE, align = "center")
+Zauważyć możemy również grupowanie się braków danych.
 
-library(kableExtra)
-library(DT)
-
-# ... your code ...
-library(DT)
-
-# Assuming you have a d"ata frame named "HR"
-datatable(HR, filter = "none", options = list(pageLength = 10))
-HR %>%
-  kbl(
-    align = rep("r", ncol(HR)),
-    booktabs = TRUE,
-    longtable = TRUE,
-    format = "html") %>%
-  kable_styling(
-    full_width = FALSE, 
-    position = "center", 
-    bootstrap_options = c("striped", "hover", "condensed")) %>%
-  add_header_above(
-    c("TABELA 1.1: Dane pracowników" = 35),
-    bold = TRUE, 
-    align = "center")
-
+```{R kor_brak, warning=FALSE}
+ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
+  geom_point() +
+  geom_miss_point() +
+  scale_color_manual(values = c("darkorange", "cyan4"))
+  theme_minimal()
 ```
 
-```{R mac_kor, eval=FALSE, include=FALSE}
-HR <- read_csv("HR.csv")
+Na powyższym wykresie zobserwować możemy, iż zmienne MonthlyIncome oraz Age są
+ze sobą dodatnio skorelowane, aczkolwiek istotna część obserwacji wykazuje się
+brakami w tychże zmiennych.
 
-#sprawdzamy unikatowe wartości zmiennych "tekstowych"
-all_char_values <- list(
-  val_1 = table(HR$Attrition),
-  val_2 = table(HR$BusinessTravel),
-  val_3 = table(HR$Department),
-  val_4 = table(HR$EducationField),
-  val_5 = table(HR$Gender),
-  val_6 = table(HR$JobRole),
-  val_7 = table(HR$MaritalStatus),
-  val_8 = table(HR$Over18),
-  val_9 = table(HR$OverTime)
-)
+## Macierz korelacji dla zmiennych numerycznych
 
-#uproszczenie listy all_char_values
-kategorie <- lapply(all_char_values, names)
+### Tworzenie macierzy korelacji
 
-HR_factor <- HR %>%
-  mutate(
-    Attrition = factor(Attrition, levels = kategorie$val_1), 
-    BusinessTravel = factor(BusinessTravel, levels = kategorie$val_2),
-    Department = factor(Department, levels = kategorie$val_3),
-    EducationField = factor(EducationField, levels = kategorie$val_4),
-    Gender = factor(Gender, levels = kategorie$val_5),
-    JobRole = factor(JobRole, levels = kategorie$val_6),
-    MaritalStatus = factor(MaritalStatus, levels = kategorie$val_7),
-    Over18 = factor(Over18, levels = kategorie$val_8),
-    OverTime = factor(OverTime, levels = kategorie$val_9)
-  )
+```{R mx_kor_numeric, echo=TRUE, message=FALSE, warning=FALSE}
+# usuwanie zmiennych nieliczbowych
+numeric_HR <- HR %>% select(where(is.numeric))
 
-factor_HR <- HR_factor %>%
-  mutate(across(where(is.factor), ~ as.numeric(as.factor(.))))
-
-macierz_kor_factor <- cor_mat(
-  factor_HR,
+macierz_kor_numeric <- cor_mat(
+  numeric_HR,
   method = "pearson",
   alternative = "two.sided",
   conf.level = 0.95
 )
 
-mx_kor_czyste <- macierz_kor_factor[rowSums(!is.na(macierz_kor_factor)) > 1, colSums(!is.na(macierz_kor_factor)) > 0] %>%
-  column_to_rownames("rowname")
-mx_kor_czyste_2 <- macierz_kor_factor[rowSums(!is.na(macierz_kor_factor)) > 0, colSums(!is.na(macierz_kor_factor)) > 0] 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
-zm_zbedne_V1 <- setdiff(colnames(macierz_kor_factor), colnames(mx_kor_czyste_2))
-#knitr::kable(mx_kor_czyste, format = "html") %>%
- # kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
-Zmienne `r paste(zm_zbedne_V1, collapse = ", ")` ze względu na wynikające ze wzoru
-na korelacje Pearsona właściwosci
+macierz_kor_numeric
 ```
+
+Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość
+korelacji. Wynika to z użytej metody, tj. współczynnika korelacji Pearsona o
+wzorze:
+
+$$
+r = \frac{{}\sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \overline{x})^2  \sum_{i=1}^{n}(y_i - \overline{y})^2}}
+$$
+
+Brak wartości dla macierzy korelacji wynika tym samym z faktu, iż mianownik nie
+może przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna przyjmuje
+tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym
+samym zmienne te należałoby w następnym kroku usunąć.
+
+### Graficzna prezentacja korelacji
+
+```{R}
+ggcorrplot(macierz_kor_numeric)
+```
+
