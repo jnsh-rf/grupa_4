@@ -369,16 +369,21 @@ imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż
 wypełnienie braków zmiennych wykonane zostanie odpowiednio:
 
 -   Age - knn / mice
--   Att - mice i rpart (prawie identyczne), wybór mice
+-   Att - mice i rpart (prawie identyczne), wybór mice (jako zmienna )
 -   MOI - knn
 
 **potrzebne dalsze testy sprawdzające, jak zmienne się nadają**
 
-```{r}
+```{r imputacja_fin, echo=TRUE}
 HR_imputowane <- HR %>%
-  mutate(Age = ifelse(is.na(HR$Age), im_age_mice, HR$Age)) %>%
-  mutate(Attrition = ifelse(is.na(HR$Attrition), im_att_mice, HR$Attrition)) %>%
-  mutate(Attrition = ifelse(!is.na(HR$Attrition), HR$Attrition, ifelse(HR$Attrition == 2, "Yes", "No"))) %>%
-  mutate(MonthlyIncome = ifelse(is.na(HR$MonthlyIncome), im_moi_knn, HR$MonthlyIncome))
-HR_imputowane
+  cbind(im_age_mice, im_att_mice, im_moi_knn) %>%
+  mutate(
+    Age = im_age_mice,
+    Attrition = im_att_mice,
+    MonthlyIncome = im_moi_knn) %>%
+  select(-im_age_mice, im_att_mice, im_moi_knn) %>%
+  mutate(Attrition = ifelse(Attrition == 1, "No", 
+                            ifelse(Attrition == 2, "Yes", Attrition)))
+
+view(HR_imputowane)
 ```
