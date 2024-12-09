@@ -141,7 +141,6 @@ Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wz
 wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej
 zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
 
-
 ```{r kor_brak, warning=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
   geom_point() +
@@ -362,10 +361,24 @@ ggplot() +
   theme_minimal()
 
 ```
+
 ### Uzupełnianie braków danych
 
-Na podstawie wizualnej oceny rozkładu zmiennych oryginalnych względem imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż wypełnienie braków zmiennej Age oraz Attrition wykonane zostanie 
+Na podstawie wizualnej oceny rozkładu zmiennych oryginalnych względem
+imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż
+wypełnienie braków zmiennych wykonane zostanie odpowiednio:
 
-Age - knn / mice
-Att - mice i rpart (prawie identyczne), wybór mice
-MOI - knn
+-   Age - knn / mice
+-   Att - mice i rpart (prawie identyczne), wybór mice
+-   MOI - knn
+
+**potrzebne dalsze testy sprawdzające, jak zmienne się nadają**
+
+```{r}
+HR_imputowane <- HR %>%
+  mutate(Age = ifelse(is.na(HR$Age), im_age_mice, HR$Age)) %>%
+  mutate(Attrition = ifelse(is.na(HR$Attrition), im_att_mice, HR$Attrition)) %>%
+  mutate(Attrition = ifelse(!is.na(HR$Attrition), HR$Attrition, ifelse(HR$Attrition == 2, "Yes", "No"))) %>%
+  mutate(MonthlyIncome = ifelse(is.na(HR$MonthlyIncome), im_moi_knn, HR$MonthlyIncome))
+HR_imputowane
+```
