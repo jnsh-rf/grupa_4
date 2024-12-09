@@ -14,7 +14,11 @@ editor_options:
 ---
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
-knitr::opts_chunk$set(include = FALSE, warning = FALSE)
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	include = FALSE
+)
 options(scipen = 999, digits=6) 
 # Lista bibliotek
 libraries <- c(
@@ -22,10 +26,10 @@ libraries <- c(
   "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
   "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
   "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
-  "kableExtra", "DT", "mice", "finalfit", "gridExtra"
+  "kableExtra", "DT", "mice", "finalfit", "gridExtra", "caret"
 )
 
-packages <- c("skimr", "GGally", "plotly", "viridis", "caret", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "ggplot2", "ggthemes", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "RColorBrewer", "plotrix", "ggrepel", "forcats", "reshape2", "caTools", "tree", "rattle")
+packages <- c("skimr", "GGally", "plotly", "viridis", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "ggplot2", "ggthemes", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "RColorBrewer", "plotrix", "ggrepel", "forcats", "reshape2", "caTools", "tree", "rattle")
 
 # Funkcja do instalacji i wczytania bibliotek
 install_and_load <- function(lib) {
@@ -133,7 +137,10 @@ danych w zmiennych współwystępują w:
 -   Age i MonthlyIncome 9 razy;
 -   wszystkich razem tylko 1 raz.
 
-Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
+Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec
+wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej
+zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
+
 
 ```{r kor_brak, warning=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
@@ -258,7 +265,7 @@ pomijając zmienne, w których występują braki.
 
 ## Imputacja danych
 
-### Metoda rpart
+### Imputacja metodą drzew losowych (RPART)
 
 ```{r rpart, echo=TRUE}
 im_age_rpart <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "rpart"), 0)
@@ -289,7 +296,7 @@ plot(im_att_rpart)
 plot(im_moi_rpart)
 ```
 
-### Metoda mice
+### Imputacja metodą Multivariate Imputation by Chained Equations (mice)
 
 ```{r mice, echo=TRUE}
 im_age_mice <- (round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0))
@@ -312,10 +319,14 @@ plot(im_att_mice)
 plot(im_moi_mice)
 ```
 
-### Imputacja kNN
+### Imputacja metoda K-najbliższych sąsiadów (KNN)
 
 ```{r kNN, echo=TRUE}
 hr_knn <- VIM::kNN(numeric_HR)
+
+im_age_knn <- hr_knn$Age
+im_att_knn <- hr_knn$Attrition
+im_moi_knn <- hr_knn$MonthlyIncome
 
 ggplot() +
   geom_density(data = numeric_HR, aes(x = Age, color = "Original"), size = 1) +
@@ -351,3 +362,10 @@ ggplot() +
   theme_minimal()
 
 ```
+### Uzupełnianie braków danych
+
+Na podstawie wizualnej oceny rozkładu zmiennych oryginalnych względem imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż wypełnienie braków zmiennej Age oraz Attrition wykonane zostanie 
+
+Age - knn / mice
+Att - mice i rpart (prawie identyczne), wybór mice
+MOI - knn
