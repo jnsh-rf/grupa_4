@@ -247,3 +247,99 @@ samym uznać za zmienne, wykorzystane do imputacji.
 
 Zmienna Attrition natomist nie jest zbyt mocno skorelowana z żadną ze zmiennych,
 której to wartości absolutne znajdują się w przedziale [0,0052 - 0,18].
+Przyjmiemy tym samym do imputacji wszystkie możliwe zmienne numeryczne,
+pomijając zmienne, w których występują braki.
+
+## Imputacja danych
+
+### Metoda rpart
+
+```{r rpart, echo=TRUE}
+im_age_rpart <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "rpart"), 0)
+
+nazw_kol_hr <- colnames(numeric_HR) %>% 
+  setdiff("Attrition")
+
+#znales sposób na zagniezdzenie nazw_kol_hr w im_att_rpart
+#install.packages("clipr")
+#library(clipr)
+writeClipboard(nazw_kol_hr)
+
+im_att_rpart <- round(imputate_na(numeric_HR, Attrition, 
+                                  yvar = c("DailyRate", "DistanceFromHome", "Education", "EmployeeCount",
+                                           "EmployeeNumber", "EnvironmentSatisfaction", "HourlyRate",
+                                           "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
+                                           "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating",
+                                           "RelationshipSatisfaction", "StandardHours", "StockOptionLevel",
+                                           "TotalWorkingYears", "TrainingTimesLastYear","WorkLifeBalance",
+                                           "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion",
+                                           "YearsWithCurrManager"), 
+                                  method = "rpart"), 0)
+
+im_moi_rpart <- round(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "rpart"), 0)
+
+plot(im_age_rpart)
+plot(im_att_rpart)
+plot(im_moi_rpart)
+```
+
+### Metoda mice
+
+```{r mice, echo=TRUE}
+im_age_mice <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0)
+
+im_att_mice <- round(imputate_na(numeric_HR, Attrition, 
+                                  yvar = c("DailyRate", "DistanceFromHome", "Education", "EmployeeCount",
+                                           "EmployeeNumber", "EnvironmentSatisfaction", "HourlyRate",
+                                           "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
+                                           "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating",
+                                           "RelationshipSatisfaction", "StandardHours", "StockOptionLevel",
+                                           "TotalWorkingYears", "TrainingTimesLastYear","WorkLifeBalance",
+                                           "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion",
+                                           "YearsWithCurrManager"), 
+                                  method = "mice"), 0)
+
+im_moi_mice <- round(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "mice"), 0)
+
+plot(im_age_mice)
+plot(im_att_mice)
+plot(im_moi_mice)
+```
+### Imputacja kNN
+
+```{r kNN, echo=TRUE}
+hr_knn <- VIM::kNN(numeric_HR)
+
+im_age_knn <- tibble(age1 = hr_knn$Age, age = numeric_HR$Age)
+im_att_knn <- hr_knn$Attrition
+im_moi_knn <- hr_knn$MonthlyIncome
+
+str(im_age_mice)
+
+aggr(x = c(im_age_knn, numeric_HR$Age), delimiter = )
+aggr(x = c(im_att_knn, numeric_HR$Attrition), delimiter = im_att_knn)
+aggr(x = c(im_moi_knn, numeric_HR$MonthlyIncome))
+
+
+# Assuming 'numeric_HR' is the original data and 'hr_knn' is the imputed data
+combined_long <- numeric_HR %>%
+  as.data.frame() %>%
+  pivot_longer(cols = everything(Age, Attrition, MonthlyIncome), names_to = "variable", values_to = "value") %>%
+  mutate(type = "Original") %>%
+  bind_rows(
+    hr_knn %>%
+      as.data.frame() %>%
+      pivot_longer(cols = everything(age1 = Age, att1 = Attrition, moi1 = MonthlyIncome), names_to = "variable", values_to = "value") %>%
+      mutate(type = "Imputed")
+  )
+
+ggplot(combined_long, aes(x = value, color = type)) +
+  geom_density() +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Distribution of Original and Imputed Values",
+       x = "Value",
+       y = "Density") +
+  theme_minimal()
+
+
+```
