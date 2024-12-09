@@ -14,7 +14,7 @@ editor_options:
 ---
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(include = FALSE, warning = FALSE)
 options(scipen = 999, digits=6) 
 # Lista bibliotek
 libraries <- c(
@@ -22,7 +22,7 @@ libraries <- c(
   "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
   "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
   "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
-  "kableExtra", "DT"
+  "kableExtra", "DT", "mice", "finalfit", "gridExtra"
 )
 
 packages <- c("skimr", "GGally", "plotly", "viridis", "caret", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "ggplot2", "ggthemes", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "RColorBrewer", "plotrix", "ggrepel", "forcats", "reshape2", "caTools", "tree", "rattle")
@@ -117,6 +117,12 @@ vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
 gg_miss_fct(HR, fct = JobSatisfaction)
 #wizualizacja współwystępowania braków, brakuje w 3 kolumnach, stąd nsets = 3
 gg_miss_upset(HR, nsets = 3)
+# pakiet finalfit
+explain <- names(HR)
+missplot_complete <- HR %>% missing_pattern("Age", explain)
+# na tep odstawie usunieto wszystki zmienne za wyjątkiem YearsWithCurrManager, JobRole i Gender oraz zmiennych z brakami
+explain_u <- c("Age", "Attrition", "MonthlyIncome", "Gender", "JobRole", "YearsWithCurrManager")
+missplot_finalfit <- HR %>% missing_pattern("Age", explain_u)
 ```
 
 Na podstawie graficznej przezentacji braków danych możemy zauważyć, iż braki
@@ -127,7 +133,7 @@ danych w zmiennych współwystępują w:
 -   Age i MonthlyIncome 9 razy;
 -   wszystkich razem tylko 1 raz.
 
-Zauważyć możemy również grupowanie się braków danych.
+Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
 
 ```{r kor_brak, warning=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
@@ -286,7 +292,7 @@ plot(im_moi_rpart)
 ### Metoda mice
 
 ```{r mice, echo=TRUE}
-im_age_mice <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0)
+im_age_mice <- (round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0))
 
 im_att_mice <- round(imputate_na(numeric_HR, Attrition, 
                                   yvar = c("DailyRate", "DistanceFromHome", "Education", "EmployeeCount",
@@ -305,41 +311,43 @@ plot(im_age_mice)
 plot(im_att_mice)
 plot(im_moi_mice)
 ```
+
 ### Imputacja kNN
 
 ```{r kNN, echo=TRUE}
 hr_knn <- VIM::kNN(numeric_HR)
 
-im_age_knn <- tibble(age1 = hr_knn$Age, age = numeric_HR$Age)
-im_att_knn <- hr_knn$Attrition
-im_moi_knn <- hr_knn$MonthlyIncome
-
-str(im_age_mice)
-
-aggr(x = c(im_age_knn, numeric_HR$Age), delimiter = )
-aggr(x = c(im_att_knn, numeric_HR$Attrition), delimiter = im_att_knn)
-aggr(x = c(im_moi_knn, numeric_HR$MonthlyIncome))
-
-
-# Assuming 'numeric_HR' is the original data and 'hr_knn' is the imputed data
-combined_long <- numeric_HR %>%
-  as.data.frame() %>%
-  pivot_longer(cols = everything(Age, Attrition, MonthlyIncome), names_to = "variable", values_to = "value") %>%
-  mutate(type = "Original") %>%
-  bind_rows(
-    hr_knn %>%
-      as.data.frame() %>%
-      pivot_longer(cols = everything(age1 = Age, att1 = Attrition, moi1 = MonthlyIncome), names_to = "variable", values_to = "value") %>%
-      mutate(type = "Imputed")
-  )
-
-ggplot(combined_long, aes(x = value, color = type)) +
-  geom_density() +
-  facet_wrap(~ variable, scales = "free") +
-  labs(title = "Distribution of Original and Imputed Values",
-       x = "Value",
-       y = "Density") +
+ggplot() +
+  geom_density(data = numeric_HR, aes(x = Age, color = "Original"), size = 1) +
+  geom_density(data = hr_knn, aes(x = Age, color = "Imputed"), size = 1, linetype = "dashed") +
+  labs(
+    title = "Rozkład zmiennej Age",
+    x = "Age",
+    y = "Density",
+    color = "Legend"
+  ) +
   theme_minimal()
 
+ggplot() +
+  geom_density(data = numeric_HR, aes(x = Attrition, color = "Original"), size = 1) +
+  geom_density(data = hr_knn, aes(x = Attrition, color = "Imputed"), size = 1, linetype = "dashed") +
+  labs(
+    title = "Rozkład zmiennej Attrition",
+    x = "Age",
+    y = "Density",
+    color = "Legend"
+  ) +
+  theme_minimal()
+
+ggplot() +
+  geom_density(data = numeric_HR, aes(x = MonthlyIncome, color = "Original"), size = 1) +
+  geom_density(data = hr_knn, aes(x = MonthlyIncome, color = "Imputed"), size = 1, linetype = "dashed") +
+  labs(
+    title = "Rozkład zmiennej MonthlyIncome",
+    x = "Age",
+    y = "Density",
+    color = "Legend"
+  ) +
+  theme_minimal()
 
 ```
