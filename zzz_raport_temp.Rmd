@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 options(scipen = 999, digits=6) 
 # Lista bibliotek
 libraries <- c(
-  "rmdformats", "validate", "validatetools", "dcmodify", "naniar",
+  "rmdformats", "validate", "validatetools", "dcmodify", "naniar", "visdat",
   "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
   "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
   "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
