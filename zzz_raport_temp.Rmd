@@ -10,7 +10,7 @@ output:
     toc_depth: 4
 editor_options: 
   markdown: 
-    wrap: 80
+    wrap: 72
 ---
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 options(scipen = 999, digits=6) 
 # Lista bibliotek
 libraries <- c(
-  "rmdformats", "validate", "validatetools", "dcmodify",
+  "rmdformats", "validate", "validatetools", "dcmodify", "naniar",
   "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
   "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
   "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
@@ -53,17 +53,18 @@ invisible(sapply(libraries, function(lib) {
 
 ## Opis projektu
 
-Odejścia pracowników prowadzą do znacznych kosztów dla firmy, w tym kosztów
-zakłóceń w działalności, zatrudniania i szkolenia nowych pracowników. W związku
-z tym istnieje duże zainteresowanie HR zrozumieniem czynników wpływających na
-odejścia pracowników i ich minimalizacją.
+Odejścia pracowników prowadzą do znacznych kosztów dla firmy, w tym
+kosztów zakłóceń w działalności, zatrudniania i szkolenia nowych
+pracowników. W związku z tym istnieje duże zainteresowanie HR
+zrozumieniem czynników wpływających na odejścia pracowników i ich
+minimalizacją.
 
-Analityka pomaga nam w interpretacji danych organizacyjnych. Znajduje trendy
-związane z ludźmi w danych i pozwala działowi HR podjąć odpowiednie kroki, aby
-organizacja działała sprawnie i przynosiła zyski. Odchodzienie pracowników w
-korporacji jest jednym ze złożonych wyzwań, z którymi muszą sobie radzić
-menedżerowie i pracownicy HR. Celem projektu jest tym samym przewidywanie odejść
-pracowników.
+Analityka pomaga nam w interpretacji danych organizacyjnych. Znajduje
+trendy związane z ludźmi w danych i pozwala działowi HR podjąć
+odpowiednie kroki, aby organizacja działała sprawnie i przynosiła zyski.
+Odchodzienie pracowników w korporacji jest jednym ze złożonych wyzwań, z
+którymi muszą sobie radzić menedżerowie i pracownicy HR. Celem projektu
+jest tym samym przewidywanie odejść pracowników.
 
 ## Struktura i opis danych
 
@@ -72,9 +73,9 @@ HR <- read_csv("HR.csv")
 ```
 
 Zbiór danych **HR** zawiera informacje dotyczące 1,470 obecnych i byłych
-pracowników, w tym związane z ich satysfakcją z pracy, równowagą między życiem
-zawodowym a prywatnym, stażem pracy, doświadczeniem, wynagrodzeniem i danymi
-demograficznymi.
+pracowników, w tym związane z ich satysfakcją z pracy, równowagą między
+życiem zawodowym a prywatnym, stażem pracy, doświadczeniem,
+wynagrodzeniem i danymi demograficznymi.
 
 ### Struktura danych
 
@@ -89,29 +90,29 @@ miss_case_table(HR)
 
 ```
 
-Zbiór składa się z 1470 obserwacji (wierszy) oraz 35 zmiennych (kolumn). W tym
-zbiorze danych mamy tylko dwa typy danych: numeric oraz character.
+Zbiór składa się z 1470 obserwacji (wierszy) oraz 35 zmiennych (kolumn).
+W tym zbiorze danych mamy tylko dwa typy danych: numeric oraz character.
 
-W zbiorze danych brakuje 400 zmiennych, co stanowi 0,7774% wszystkich zmiennych.
-331 rzedów cechuje się brakiem jednej ze zmiennych, 33 rzedy dwoma brakami oraz
-w 1 rzędzie brakuje wartości dla 3 zmiennych.
+W zbiorze danych brakuje 400 zmiennych, co stanowi 0,7774% wszystkich
+zmiennych. 331 rzedów cechuje się brakiem jednej ze zmiennych, 33 rzedy
+dwoma brakami oraz w 1 rzędzie brakuje wartości dla 3 zmiennych.
 
-Przewidywane odejście pracowników ”Attrition” stanowić będą zmienną objaśnianą.
-Ze względu na fakt, iż jest to zmienna typu *character*, w dalszych krokach
-przekodowana zostanie ona na zmienną typu *factor*.
+Przewidywane odejście pracowników ”Attrition” stanowić będą zmienną
+objaśnianą. Ze względu na fakt, iż jest to zmienna typu *character*, w
+dalszych krokach przekodowana zostanie ona na zmienną typu *factor*.
 
 ### Statystyki opisowe - dokonczyc !!!
 
-```{r stat_op_HR, include=FALSE}
+```{r stat_op_HR, eval=FALSE, include=FALSE}
 summary(HR[, sapply(HR, is.numeric)])
 stop_hr
 ```
 
 ## Wizualizacja braku danych
 
-Graficzna prezentacja braku danych pozwala nam okreslić rozkład brakujących
-zmiennych, oraz wstępnie ocenić typ braku danych, przydatny do podjęcia
-następnych kroków.
+Graficzna prezentacja braku danych pozwala nam okreslić rozkład
+brakujących zmiennych, oraz wstępnie ocenić typ braku danych, przydatny
+do podjęcia następnych kroków.
 
 ```{r echo=TRUE}
 vis_miss(HR)
@@ -129,31 +130,38 @@ explain_u <- c("Age", "Attrition", "MonthlyIncome", "Gender", "JobRole", "YearsW
 missplot_finalfit <- HR %>% missing_pattern("Age", explain_u)
 ```
 
-Na podstawie graficznej przezentacji braków danych możemy zauważyć, iż braki
-danych w zmiennych współwystępują w:
+Na podstawie graficznej przezentacji braków danych możemy zauważyć, iż
+braki danych w zmiennych współwystępują w:
 
 -   Age i Attrition 12 razy;
 -   Attrition i MonthlyIncome 12 razy;
 -   Age i MonthlyIncome 9 razy;
 -   wszystkich razem tylko 1 raz.
 
-Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec
-wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej
-zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
+Zauważyć możemy również grupowanie się braków danych. Braki przyjmują
+wzorzec wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny
+(braki jedej zmiennej nie oznaczają braków pozostałych zmiennych) oraz
+połączony.
 
-```{r kor_brak, warning=FALSE}
+```{r kor_brak, echo=FALSE, warning=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
   geom_point() +
   geom_miss_point() +
-  scale_color_manual(values = c("darkorange", "cyan4"))
+  scale_color_manual(values = c("darkorange", "cyan4"),
+                     aesthetics = c("colour", "fill")) +
   theme_minimal()
 ```
 
-Na powyższym wykresie zobserwować możemy, iż zmienne MonthlyIncome oraz Age są
-ze sobą dodatnio skorelowane, aczkolwiek istotna część obserwacji wykazuje się
-brakami w tychże zmiennych.
+Na powyższym wykresie zobserwować możemy, iż zmienne MonthlyIncome oraz
+Age są ze sobą dodatnio skorelowane, aczkolwiek istotna część obserwacji
+wykazuje się brakami w tychże zmiennych.
 
 ## Macierz korelacji dla zmiennych numerycznych
+
+W tej sekcji dowiemy się, które cechy mają ze sobą dodatnią korelację.
+To mówi nam, czy istnieje związek między dwiema zmiennymi. W sekcji
+korelacji podoba mi się to, że pozwala nam ona lepiej zrozumieć niektóre
+cechy, z którymi mamy do czynienia.
 
 ### Tworzenie macierzy korelacji
 
@@ -203,28 +211,34 @@ macierz_kor_numeric <- cor_mat(
 macierz_kor_numeric
 ```
 
-Przy tworzeniu macierzy korelacji dla zmiennych numerycznych uwzględniono
-dodatkoweo zmienną Attrition, po jej uprzednim przekodowaniu na *factor* a
-następnie na *numeric*, gdyż chcemy sprawdzić które zmienne są z nią najbardziej
-skorelowane.
+Przy tworzeniu macierzy korelacji dla zmiennych numerycznych
+uwzględniono dodatkoweo zmienną Attrition, po jej uprzednim
+przekodowaniu na *factor* a następnie na *numeric*, gdyż chcemy
+sprawdzić które zmienne są z nią najbardziej skorelowane.
 
-Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość
-korelacji. Wynika to z użytej metody, tj. współczynnika korelacji Pearsona o
-wzorze:
+Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została
+wartość korelacji. Wynika to z użytej metody, tj. współczynnika
+korelacji Pearsona o wzorze:
 
 $$
 r = \frac{{}\sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \overline{x})^2  \sum_{i=1}^{n}(y_i - \overline{y})^2}}
 $$
 
-Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie może
-przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna przyjmuje tylko
-jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym samym
-zmienne te należałoby w następnym kroku usunąć.
+Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie
+może przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna
+przyjmuje tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do
+czynienia, a tym samym zmienne te należałoby w następnym kroku usunąć.
 
 ### Graficzna prezentacja korelacji
 
 ```{r echo=TRUE}
-ggcorrplot(macierz_kor_numeric)
+ggcorrplot(macierz_kor_numeric,
+           insig = "blank",
+           lab_size = 3, 
+           method="square", 
+           colors = c("#4477AA", "white", "#BB4444"), 
+           ggtheme=theme_minimal(),
+           legend.title = "Korelacja")
 ```
 
 ```{r zn_naj_skor, echo=TRUE}
@@ -251,16 +265,17 @@ mxkor_moi <- mxkor_missing_var %>%
 
 ```
 
-Na podstawie macierzy korelacji możemy stwierdzić, że zmienna Age skorelowana
-jest najsilniej z trzema zmiennymi - TotalWorkingYears (0.68), JobLevel (0.51)
-oraz MonthlyIncome (0.49), natomiast MonthlyIncome ze zmiennymi JobLevel (0.95),
-TotalWorkingYears (0.77), YearsAtCompany (0.51) oraz Age (0.49). Możemy je tym
-samym uznać za zmienne, wykorzystane do imputacji.
+Na podstawie macierzy korelacji możemy stwierdzić, że zmienna Age
+skorelowana jest najsilniej z trzema zmiennymi - TotalWorkingYears
+(0.68), JobLevel (0.51) oraz MonthlyIncome (0.49), natomiast
+MonthlyIncome ze zmiennymi JobLevel (0.95), TotalWorkingYears (0.77),
+YearsAtCompany (0.51) oraz Age (0.49). Możemy je tym samym uznać za
+zmienne, wykorzystane do imputacji.
 
-Zmienna Attrition natomist nie jest zbyt mocno skorelowana z żadną ze zmiennych,
-której to wartości absolutne znajdują się w przedziale [0,0052 - 0,18].
-Przyjmiemy tym samym do imputacji wszystkie możliwe zmienne numeryczne,
-pomijając zmienne, w których występują braki.
+Zmienna Attrition natomist nie jest zbyt mocno skorelowana z żadną ze
+zmiennych, której to wartości absolutne znajdują się w przedziale
+[0,0052 - 0,18]. Przyjmiemy tym samym do imputacji wszystkie możliwe
+zmienne numeryczne, pomijając zmienne, w których występują braki.
 
 ## Imputacja danych
 
