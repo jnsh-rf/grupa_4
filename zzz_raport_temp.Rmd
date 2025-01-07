@@ -26,7 +26,7 @@ libraries <- c(
   "errorlocate", "deductive", "VIM", "simputation", "lumberjack", "ISLR", 
   "dlookr", "xts", "quantmod", "ROCR", "Information", "scorecard", "knitr",
   "readr", "tidyverse", "editrules", "deducorrect", "rstatix", "ggcorrplot",
-  "kableExtra", "DT", "mice", "finalfit", "gridExtra", "caret"
+  "kableExtra", "DT", "mice", "finalfit", "gridExtra", "caret", "janitor"
 )
 
 packages <- c("skimr", "GGally", "plotly", "viridis", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "ggplot2", "ggthemes", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "RColorBrewer", "plotrix", "ggrepel", "forcats", "reshape2", "caTools", "tree", "rattle")
@@ -401,4 +401,11 @@ HR_imputowane <- HR %>%
                             ifelse(Attrition == 2, "Yes", Attrition)))
 
 view(HR_imputowane)
+```
+
+```{r janitor, echo=TRUE, message=FALSE, warning=FALSE}
+# chunk do finalnej wersji tabeli, ma usuwać zbeden kolumny i naprawiać nazwy - pakietem janitor
+# clean_names	Cleans names of an object (usually a data.frame).
+# remove_constant	Remove constant columns from a data.frame or matrix.
+# 
 ```
