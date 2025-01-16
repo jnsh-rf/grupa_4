@@ -75,6 +75,15 @@ ggplot(stopiona_macierz_kor, aes(x=rowname, y=variable, fill=value)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 
+#wykres liniowy attrition od wieku
+ggplot(HR_imputowane, aes(x = Age, y = MonthlyIncome)) +
+geom_point()
+
+
+#boxplot
+ggplot(HR_imputowane, aes(x =Attrition , y = Age)) +
+  geom_boxplot()
+
 
 
 
