@@ -1,14 +1,20 @@
 install.packages("writexl")
 install.packages("esquisse")
+install.packages("ggcorrplot")
 
 library(esquisse)
 library(tidyverse)
 library(writexl)
 library(ggplot2)
 library(reshape2)
+library(ggcorrplot)
 
 # zapisanie danych po imputacji do Excela
 write_xlsx(HR_imputowane, path = "HR_imputowane.xlsx")
+
+library(readxl)
+HR_imputowane <- read_excel("HR_imputowane.xlsx")
+View(HR_imputowane)
 
 #SKOPIOWANE Z RAPORTU, aby macierz korelacji działała na danych HR_imputowane
 #sprawdzamy unikatowe wartości zmiennych "tekstowych" - przenieść do osobnego bloku (tymczasowo potrzebny tutaj)
@@ -75,7 +81,7 @@ ggplot(stopiona_macierz_kor, aes(x=rowname, y=variable, fill=value)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 
-#wykres liniowy attrition od wieku
+#wykres liniowy dochód od wieku
 ggplot(HR_imputowane, aes(x = Age, y = MonthlyIncome)) +
 geom_point()
 

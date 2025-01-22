@@ -384,7 +384,7 @@ imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż
 wypełnienie braków zmiennych wykonane zostanie odpowiednio:
 
 -   Age - knn / mice
--   Att - mice i rpart (prawie identyczne), wybór mice (jako zmienna )
+-   Att - mice i rpart (prawie identyczne), wybór mice (jako zmienna)
 -   MOI - knn
 
 **potrzebne dalsze testy sprawdzające, jak zmienne się nadają**

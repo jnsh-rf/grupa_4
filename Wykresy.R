@@ -1,8 +1,19 @@
 #Wykresy
-install.packages("viridis")
+install.packages("viridisLite")
 install.packages("RColorBrewer")
+install.packages("circlize")
+install.packages("plotly")
+install.packages("ggplot")
+install.packages("circlize")
 library(viridis)
 library(RColorBrewer)
+library(ggplot)
+library(plotly)
+library(circlize)
+library(ggplot2)
+library(dplyr)
+library(circlize)
+
 
 #Odejścia w zależności od grup wiekowych
 
@@ -14,8 +25,23 @@ ggplot(HR_imputowane, aes(x=Age, fill=Attrition, color=Attrition)) +
   theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 15), legend.position="bottom") +
   labs(x = "Age") 
 
+
 #Wykres wskazuję, iż większość pracowników odchodzący z pracy jest w wieku 28-36 lat. 
 #Osoby w młodym wieku, częściej zmieniają pracę.
+
+
+summary(HR_imputowane$Age)  # Średnia i zakres wieku
+table(HR_imputowane$Age, HR_imputowane$Attrition)  # Liczba odejść w każdej grupie wiekowej
+
+# Kom: Najwięcej osób odchodzi w wieku 28-33, nie odchodzi 27-42
+
+table_age_attrition <- table(HR_imputowane$AgeGroup, HR_imputowane$Attrition)
+chisq.test(table_age_attrition)
+
+
+HR_imputowane$AgeGroup <- cut(HR_imputowane$Age, breaks = c(20, 30, 40, 50, 60, 70), 
+                              labels = c("20-29", "30-39", "40-49", "50-59", "60+"), right = FALSE)
+
 
 #Stan cywilny a rotacja pracowników
 
@@ -31,8 +57,27 @@ HR_imputowane %>% group_by(Attrition, MaritalStatus) %>% summarize(N = n()) %>% 
   labs(x = "Attrition", y = "Count")
 
 
-library(ggplot2)
-library(dplyr)
+
+HR_imputowane %>% 
+  group_by(Attrition, MaritalStatus) %>% 
+  summarize(N = n()) %>% 
+  mutate(countT = sum(N)) %>%
+  group_by(Attrition, MaritalStatus, add = TRUE) %>%
+  mutate(per = paste0(round(100 * N / countT, 1), '%')) %>%
+  ggplot(aes(x = Attrition, y = N, fill = MaritalStatus)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  theme_bw() + 
+  scale_fill_brewer(palette = "Purples") +
+  geom_text(aes(label = per), size = 4, vjust = 1.2, color = "black", position = position_dodge(0.9)) + 
+  ggtitle("Stan cywilny a odejścia pracowników") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  labs(x = "Rotacja", y = "Liczba pracowników")
+
+table(HR_imputowane$MaritalStatus, HR_imputowane$Attrition)
+
+
+
+
 #Średni miesięczny dochód według stanowiska
 HR_imputowane %>%
   select(JobRole, MonthlyIncome) %>%
@@ -53,6 +98,8 @@ HR_imputowane %>%
   labs(x = "Job Role", y = "Monthly Income") +
   scale_y_continuous(labels = scales::comma)
 
+
+summary(HR_imputowane$MonthlyIncome)
 
 
 #Rozkład płci w poszczególnych działach
@@ -91,6 +138,9 @@ ggplot(data = GenderDistributionLong, aes(x = Department, y = Percentage, fill =
     axis.title = element_text(size = 14)
   )
 
+
+prop.table(table(HR_imputowane$Gender, HR_imputowane$Department), margin = 2)
+
 "Histogram wieku z podziałem na płeć"
 
 ggplot(HR_imputowane, aes(x = Age, fill = Gender)) +
@@ -98,6 +148,9 @@ ggplot(HR_imputowane, aes(x = Age, fill = Gender)) +
   facet_wrap(~Gender) +
   labs(title = "Histogram wieku z podziałem na płeć", x = "Wiek", y = "Liczba pracowników") +
   theme_minimal()
+
+#  theme_bw()
+
 
 
 "Rozkład dochodów w zależności od przedziału wiekowego"
@@ -109,6 +162,7 @@ HR_imputowane$AgeGroup <- cut(HR_imputowane$Age, breaks = c(0, 20, 30, 40, 50, 6
 
 #Pudełkowy
 ggplot(HR_imputowane, aes(x = AgeGroup, y = MonthlyIncome)) + 
+
   geom_boxplot(fill = "#4C79A1", color = "black") + 
   labs(x = "Przedział wiekowy", y = "Dochód miesięczny", title = "Rozkład dochodów w zależności od przedziału wiekowego") +
   theme_minimal() +
@@ -118,6 +172,15 @@ ggplot(HR_imputowane, aes(x = AgeGroup, y = MonthlyIncome)) +
     axis.title = element_text(size = 14)
   )
 
+  geom_boxplot(fill = "pink", color = "black") + 
+  labs(x = "Przedział wiekowy", y = "Dochód miesięczny", title = "Rozkład dochodów w zależności od przedziału wiekowego") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title = element_text(size = 14))
+
+
 #Słupkowy
 
 HR_imputowane %>%
@@ -126,13 +189,30 @@ HR_imputowane %>%
   ggplot(aes(x = AgeGroup, y = mean_income, fill = AgeGroup)) + 
   geom_bar(stat = "identity", show.legend = FALSE, color = "gray") +
   scale_fill_brewer(palette = "Blues") + 
+
   labs(x = "Przedział wiekowy", y = "Średni dochód (USD)", title = "Średni dochód w zależności od przedziału wiekowego") +
+
+#  labs(x = "Przedział wiekowy", y = "Średni dochód", title = "Średni dochód w zależności od przedziału wiekowego") +
   theme_minimal() +
   theme(
     plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.title = element_text(size = 14)
   )
+
+
+income_summary <- HR_imputowane %>%
+  group_by(AgeGroup) %>%
+  summarize(
+    Mean = round(mean(MonthlyIncome, na.rm = TRUE), 2),
+    Median = round(median(MonthlyIncome, na.rm = TRUE), 2),
+    Min = min(MonthlyIncome, na.rm = TRUE),
+    Max = max(MonthlyIncome, na.rm = TRUE)
+  )
+
+# Wyświetlanie wyników
+print(income_summary)
+
 
 #Liczba pracowników w podziale na role
 
@@ -144,12 +224,9 @@ ggplot(HR_imputowane, aes(x = reorder(JobRole, -table(JobRole)[JobRole]), fill =
   theme_minimal() +
   theme(legend.position = "none")
 
+
 install.packages("plotly")
 library(plotly)
-
-
-install.packages("circlize")
-library(circlize)
 
 
 "Średni miesięczny dochód w podziale na dział i rolę"
@@ -165,8 +242,7 @@ ggplot(heatmap_data, aes(x = Department, y = JobRole, fill = AvgIncome)) +
   theme_minimal()
 
 
-install.packages("viridis")
-library(viridis)
+
 
 
 "Rozkład lat pracy w firmie w podziale na dział"
@@ -178,5 +254,24 @@ ggplot(HR_imputowane, aes(x = Department, y = YearsAtCompany, fill = Department)
        x = "Dział", y = "Lata pracy", fill = "Dział") +
   theme_minimal() +
   theme(legend.position = "none")
+
+
+
+
+# Odejścia a zarobki
+
+ggplot(HR_imputowane, aes(x = MonthlyIncome, fill = Attrition, color = Attrition)) +
+  geom_density(alpha = 0.5) +  # Usunięto `position="identity"` jako zbędne w density
+  theme_minimal() +  # Zmieniono styl na bardziej nowoczesny
+  scale_fill_brewer(palette = "Set1", name = "Attrition") +  # Dodano nazwę legendy
+  scale_color_brewer(palette = "Set1", guide = "none") +  # Dopasowano kolor linii do wypełnienia, ukryto dodatkową legendę
+  ggtitle("Rozkład odejść w zależności od zarobków") + 
+  labs(x = "Dochód miesięczny", y = "Gęstość", fill = "Attrition") +  # Poprawiono etykiety osi
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
+    axis.title = element_text(size = 13),
+    axis.text = element_text(size = 11),
+    legend.position = "bottom"
+  )
 
 
