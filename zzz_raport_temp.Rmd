@@ -15,7 +15,7 @@ output:
     toc_depth: 3
 editor_options: 
   markdown: 
-    wrap: 80
+    wrap: 120
 fontsize: 12pt
 ---
 
@@ -60,23 +60,170 @@ invisible(sapply(libraries, function(lib) {
 }))
 ```
 
-## Opis projektu
-
-Odejścia pracowników prowadzą do znacznych kosztów dla firmy, w tym kosztów zakłóceń w działalności, zatrudniania i szkolenia nowych pracowników. W związku z tym istnieje duże zainteresowanie HR zrozumieniem czynników wpływających na odejścia pracowników i ich minimalizacją.
-
-Analityka pomaga nam w interpretacji danych organizacyjnych. Znajduje trendy związane z ludźmi w danych i pozwala działowi HR podjąć odpowiednie kroki, aby organizacja działała sprawnie i przynosiła zyski. Odchodzienie pracowników w korporacji jest jednym ze złożonych wyzwań, z którymi muszą sobie radzić menedżerowie i pracownicy HR. Celem projektu jest tym samym przewidywanie odejść pracowników.
-
-## Struktura i opis danych
-
 ```{r dane, message=FALSE, warning=FALSE, include=FALSE}
 HR <- read_csv("HR.csv")
 ```
+
+## Odejścia pracowników
+
+Odejścia pracowników prowadzą do znaczących kosztów dla firmy poprzez zakłócenia w działalności, konieczność rekrutacji
+i szkolenia nowych pracowników. Dlatego też, dział HR stara się zrozumieć czynniki, które wpływają na odejścia
+pracowników, aby skutecznie je minimalizować. Problem odejść pracowników jest złożonym wyzwaniem, które wymaga
+zaawansowanego podejścia w zarządzaniu zasobami ludzkimi. Celem projektu jest przewidywanie, którzy pracownicy mogą
+zdecydować się na odejście z organizacji, aby odpowiednio wcześniej podjąć działania prewencyjne.
+
+Analityka w tym przypadku odgrywa kluczową rolę w interpretacji danych organizacyjnych. Dzięki analizie danych można
+dostrzec ukryte wzorce i trendy związane z pracownikami, umożliwiając podjęcie odpowiednich działań, które przyczynią
+się do poprawy efektywności organizacji i zmniejszenia kosztów. Niniejsze badanie eksploacyjne przeprowadzono na
+zestawie danych pochodzącym z działu HR.
+
+## Struktura i opis danych
 
 ```{r dane_tabela, echo=FALSE, paged.print=TRUE}
 kable(HR)
 ```
 
-Zbiór danych **HR** zawiera informacje dotyczące 1,470 obecnych i byłych pracowników, w tym związane z ich satysfakcją z pracy, równowagą między życiem zawodowym a prywatnym, stażem pracy, doświadczeniem, wynagrodzeniem i danymi demograficznymi.
+Zbiór danych `HR` zawiera informacje dotyczące 1,470 obecnych i byłych pracowników zebranych w 35 kolumnach, w tym
+związane z ich satysfakcją z pracy, równowagą między życiem zawodowym a prywatnym, stażem pracy, doświadczeniem,
+wynagrodzeniem oraz innych cech demograficznych.
+
+## Walidacja danych
+
+Przed przystąpieniem do dalszej analizy danych, niezwykle istotne jest upewnienie się, że dane spełniają określone
+założenia w celu zapewnienia ich poprawności i spójności. Poniżej przedstawiono kluczowe założenia, które należy
+zweryfikować przed rozpoczęciem właściwej analizy danych:
+
+-   zmienne numeryczne w zestawie danych powinny przyjmować wyłącznie wartości nieujemne;
+-   pracownicy spełniają wymagania związane z pełnoletnością, wiekiem emerytalnym oraz z dotychczasowym stażem pracy;
+-   zmienna dotycząca odejść pracowników powinna ona przyjmować jedynie dwie kategorie: „Yes” dla osób, które opuściły
+    firmę, oraz „No” dla pracowników pozostających w firmie;
+-   w przypadku pracowników, dla których ta firma nie była pierwszym pracodawcą, konieczne jest odpowiednie odnotowanie
+    tej informacji;
+-   szkolenia pracowników odbywają się nie częściej, niż co dwa miesiące;
+-   czas przeprawcowany w firmie może być krótszy niż czas od ostatniego awansu, lata pracy z tym samym menedżerem lub
+    lata na obecnym stanowisku;
+-   prawidłowo uzależniona wartość podwyżki od oceny pracy pracownika;
+-   należycie przypisano sprawowane stanowiska do działów przedsiębiorstwa.
+
+```{r reguly_walidacyjne, message=FALSE, warning=FALSE, include=FALSE}
+walidacja_danych <- function(HR) {
+  HR %>% mutate(
+    AgeRule = if_else(
+      Age >= 18 & Age <= 67 & Age >= (18 + TotalWorkingYears) & is.numeric(Age),
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    AttritionRule = if_else(
+      Attrition %in% c("No", "Yes"),
+      TRUE,
+      FALSE,
+      missing = NA
+    ),
+    DistanceFromHomeRule = if_else(
+      DistanceFromHome >= 0 & is.numeric(DistanceFromHome), 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    DailyRateRule = if_else(
+      DailyRate > 0 & is.numeric(DailyRate), 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    HourlyRateRule = if_else(
+      is.numeric(HourlyRate) & HourlyRate > 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    MonthlyIncomeRule = if_else(
+      is.numeric(MonthlyIncome) & MonthlyIncome> 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    MonthlyRateRule = if_else(
+      is.numeric(MonthlyRate) & MonthlyRate > 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    NumCompaniesWorkedRule = if_else(
+      is.numeric(NumCompaniesWorked) & 
+      (
+        NumCompaniesWorked > 0 | (NumCompaniesWorked == 0 & YearsAtCompany == TotalWorkingYears)
+      ), 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    TotalWorkingYearsRule = if_else(
+      is.numeric(TotalWorkingYears) & TotalWorkingYears >= 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    TrainingTimesLastYearRule = if_else(
+      is.numeric(TrainingTimesLastYear) & TrainingTimesLastYear >= 0 & TrainingTimesLastYear <= 6, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    YearsAtCompanyRule = if_else( 
+      is.numeric(YearsAtCompany) &
+      YearsAtCompany >= 0 & YearsAtCompany <= 49 & (
+        (YearsAtCompany >= YearsInCurrentRole) | 
+        (YearsAtCompany >= YearsSinceLastPromotion) | 
+        (YearsAtCompany >= YearsWithCurrManager)
+      ),       TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    YearsInCurrentRoleRule = if_else(
+      is.numeric(YearsInCurrentRole) & YearsInCurrentRole >= 0 & YearsInCurrentRole < 49, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    YearsSinceLastPromotionRule = if_else(
+      is.numeric(YearsSinceLastPromotion) & YearsSinceLastPromotion >= 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    YearsWithCurrManagerRule = if_else(
+      is.numeric(YearsWithCurrManager) & YearsWithCurrManager >= 0, 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    PercentSalaryHikeRule = if_else(
+      (PerformanceRating == 1 & PercentSalaryHike == 0) |
+      (PerformanceRating == 2 & PercentSalaryHike >= 1 & PercentSalaryHike <= 10) |
+      (PerformanceRating == 3 & PercentSalaryHike >= 11 & PercentSalaryHike <= 19) |
+      (PerformanceRating == 4 & PercentSalaryHike >= 20), 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    ),
+    JobRoleRule = if_else(
+      (Department == "Sales" & JobRole %in% c("Sales Executive", "Sales Representative", "Manager")) |
+      (Department == "Research & Development" & JobRole %in% c("Research Scientist", "Laboratory Technician", 
+                                                                 "Research Director", "Manufacturing Director", 
+                                                                 "Healthcare Representative", "Manager")) |
+      (Department == "Human Resources" & JobRole %in% c("Human Resources", "Manager")), 
+      TRUE, 
+      FALSE, 
+      missing = NA
+    )
+  )
+}
+```
+
+zauważyć możemy następujące problemy : występują braki (szerzej poniżej) oraz liczba firm w której ktos pracował
+wcześniej (to w dalszym kroku)
 
 ### Struktura danych
 
@@ -91,11 +238,14 @@ miss_case_table(HR)
 
 ```
 
-Zbiór składa się z 1470 obserwacji (wierszy) oraz 35 zmiennych (kolumn). W tym zbiorze danych mamy tylko dwa typy danych: ***numeric*** oraz ***character***.
+Zbiór składa się z 1470 obserwacji (wierszy) oraz 35 zmiennych (kolumn). W tym zbiorze danych mamy tylko dwa typy
+danych: ***numeric*** oraz ***character***.
 
-W zbiorze danych brakuje 400 zmiennych, co stanowi 0,7774% wszystkich zmiennych. 331 rzedów cechuje się brakiem jednej ze zmiennych, 33 rzedy dwoma brakami oraz w 1 rzędzie brakuje wartości dla 3 zmiennych.
+W zbiorze danych brakuje 400 zmiennych, co stanowi 0,7774% wszystkich zmiennych. 331 rzedów cechuje się brakiem jednej
+ze zmiennych, 33 rzedy dwoma brakami oraz w 1 rzędzie brakuje wartości dla 3 zmiennych.
 
-Przewidywane odejście pracowników **Attrition** stanowić będą zmienną objaśnianą. Ze względu na fakt, iż jest to zmienna typu ***character***, w dalszych krokach przekodowana zostanie ona na zmienną typu ***factor***.
+Przewidywane odejście pracowników **Attrition** stanowić będą zmienną objaśnianą. Ze względu na fakt, iż jest to zmienna
+typu ***character***, w dalszych krokach przekodowana zostanie ona na zmienną typu ***factor***.
 
 ### Statystyki opisowe - dokonczyc !!!
 
@@ -106,7 +256,8 @@ stop_hr
 
 ## Wizualizacja braku danych
 
-Graficzna prezentacja braku danych pozwala nam okreslić rozkład brakujących zmiennych, oraz wstępnie ocenić typ braku danych, przydatny do podjęcia następnych kroków.
+Graficzna prezentacja braku danych pozwala nam okreslić rozkład brakujących zmiennych, oraz wstępnie ocenić typ braku
+danych, przydatny do podjęcia następnych kroków.
 
 ```{r viz_do_rozdzielenia, echo=TRUE}
 vis_miss(HR)
@@ -131,7 +282,8 @@ Na podstawie graficznej przezentacji braków danych możemy zauważyć, iż brak
 -   Age i MonthlyIncome 9 razy;
 -   wszystkich razem tylko 1 raz.
 
-Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec wielowymiarowy (brak w więcej niż jednej zmiennej), niemonotonny (braki jedej zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
+Zauważyć możemy również grupowanie się braków danych. Braki przyjmują wzorzec wielowymiarowy (brak w więcej niż jednej
+zmiennej), niemonotonny (braki jedej zmiennej nie oznaczają braków pozostałych zmiennych) oraz połączony.
 
 ```{r kor_brak_old, eval=FALSE, warning=FALSE, include=FALSE}
 ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
@@ -159,11 +311,14 @@ ggplot(data = HR, aes(x = Age, y = MonthlyIncome)) +
   theme(legend.position = "right")
 ```
 
-Na powyższym wykresie zobserwować możemy, iż zmienne **MonthlyIncome** oraz **Age** są ze sobą dodatnio skorelowane, aczkolwiek istotna część obserwacji wykazuje się brakami w tychże zmiennych.
+Na powyższym wykresie zobserwować możemy, iż zmienne **MonthlyIncome** oraz **Age** są ze sobą dodatnio skorelowane,
+aczkolwiek istotna część obserwacji wykazuje się brakami w tychże zmiennych.
 
 ## Macierz korelacji dla zmiennych numerycznych
 
-W tej sekcji dowiemy się, które cechy mają ze sobą dodatnią korelację. To mówi nam, czy istnieje związek między dwiema zmiennymi. W sekcji korelacji podoba mi się to, że pozwala nam ona lepiej zrozumieć niektóre cechy, z którymi mamy do czynienia.
+W tej sekcji dowiemy się, które cechy mają ze sobą dodatnią korelację. To mówi nam, czy istnieje związek między dwiema
+zmiennymi. W sekcji korelacji podoba mi się to, że pozwala nam ona lepiej zrozumieć niektóre cechy, z którymi mamy do
+czynienia.
 
 ### Tworzenie macierzy korelacji
 
@@ -213,15 +368,20 @@ macierz_kor_numeric <- cor_mat(
 macierz_kor_numeric
 ```
 
-Przy tworzeniu macierzy korelacji dla zmiennych numerycznych uwzględniono dodatkowo zmienną **Attrition**, po jej uprzednim przekodowaniu na ***factor*** a następnie na ***numeric***, gdyż chcemy sprawdzić które zmienne są z nią najbardziej skorelowane.
+Przy tworzeniu macierzy korelacji dla zmiennych numerycznych uwzględniono dodatkowo zmienną **Attrition**, po jej
+uprzednim przekodowaniu na ***factor*** a następnie na ***numeric***, gdyż chcemy sprawdzić które zmienne są z nią
+najbardziej skorelowane.
 
-Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość korelacji. Wynika to z użytej metody, tj. współczynnika korelacji Pearsona o wzorze:
+Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość korelacji. Wynika to z użytej metody, tj.
+współczynnika korelacji Pearsona o wzorze:
 
 $$
 r = \frac{{}\sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \overline{x})^2  \sum_{i=1}^{n}(y_i - \overline{y})^2}}
 $$
 
-Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie może przyjąć wartości równej 0, co może przydarzyć się, gdy zmienna przyjmuje tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym samym zmienne te należałoby w następnym kroku usunąć.
+Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie może przyjąć wartości równej 0, co może przydarzyć
+się, gdy zmienna przyjmuje tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym samym zmienne te
+należałoby w następnym kroku usunąć.
 
 ### Graficzna prezentacja korelacji
 
@@ -259,9 +419,14 @@ mxkor_moi <- mxkor_missing_var %>%
 
 ```
 
-Na podstawie macierzy korelacji możemy stwierdzić, że zmienna **Age** skorelowana jest najsilniej z trzema zmiennymi - **TotalWorkingYears** (0.68), **JobLevel** (0.51) oraz **MonthlyIncome** (0.49), natomiast **MonthlyIncome** ze zmiennymi **JobLevel** (0.95), **TotalWorkingYears** (0.77), **YearsAtCompany** (0.51) oraz **Age** (0.49). Możemy je tym samym uznać za zmienne, wykorzystane do imputacji.
+Na podstawie macierzy korelacji możemy stwierdzić, że zmienna **Age** skorelowana jest najsilniej z trzema zmiennymi -
+**TotalWorkingYears** (0.68), **JobLevel** (0.51) oraz **MonthlyIncome** (0.49), natomiast **MonthlyIncome** ze
+zmiennymi **JobLevel** (0.95), **TotalWorkingYears** (0.77), **YearsAtCompany** (0.51) oraz **Age** (0.49). Możemy je
+tym samym uznać za zmienne, wykorzystane do imputacji.
 
-Zmienna **Attrition** natomiast nie jest zbyt mocno skorelowana z żadną ze zmiennych, których to wartości absolutne znajdują się w przedziale [0,0052 - 0,18]. Przyjmiemy tym samym do imputacji wszystkie możliwe zmienne numeryczne, pomijając zmienne, w których występują braki.
+Zmienna **Attrition** natomiast nie jest zbyt mocno skorelowana z żadną ze zmiennych, których to wartości absolutne
+znajdują się w przedziale [0,0052 - 0,18]. Przyjmiemy tym samym do imputacji wszystkie możliwe zmienne numeryczne,
+pomijając zmienne, w których występują braki.
 
 ## Imputacja danych
 
@@ -365,7 +530,8 @@ ggplot() +
 
 ### Uzupełnianie braków danych
 
-Na podstawie wizualnej oceny rozkładu zmiennych oryginalnych względem imputowanych przy wykorzystaniu metod RPART, MICE oraz KNN, uznano, iż wypełnienie braków zmiennych wykonane zostanie odpowiednio:
+Na podstawie wizualnej oceny rozkładu zmiennych oryginalnych względem imputowanych przy wykorzystaniu metod RPART, MICE
+oraz KNN, uznano, iż wypełnienie braków zmiennych wykonane zostanie odpowiednio:
 
 -   Age - knn / mice
 -   Att - mice i rpart (prawie identyczne), wybór mice (jako zmienna)
