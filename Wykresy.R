@@ -1,10 +1,10 @@
 #Wykresy
-install.packages("viridisLite")
-install.packages("RColorBrewer")
+install.packages("viridisLite") # dodano do głównej funkcji
+install.packages("RColorBrewer") # dodano do głównej funkcji
 install.packages("circlize")
 install.packages("plotly")
-install.packages("ggplot")
-install.packages("circlize")
+install.packages("ggplot2") # dodano do głównej funkcji w formie tidyverse
+#install.packages("circlize")
 library(viridis)
 library(RColorBrewer)
 library(ggplot)

@@ -1,30 +1,30 @@
-sum(is.na(HR_imputowane))
-sum(is.na(fixable_data))
+#sum(is.na(HR_imputowane))
+#sum(is.na(fixable_data))
 
 ### wykres do wizualizacji braków
-VIM::aggr(fixable_data)
+VIM::aggr(HR)
 # alternatywa dla
 # missplot_finalfit <- HR %>% missing_pattern("Age", explain_u)
 
 
 
 #wszystkie brakujące obserwacje - brakuje 197
-n_miss(fixable_data)
+n_miss(HR)
 #udział brakujących w całości - 0.0116035
-prop_miss(fixable_data)
+prop_miss(HR)
 #tabela podsumowująca braki dla wszystkich zmiennych
-brak_wart2 <- tibble(miss_var_summary(fixable_data))
-brak_wart2
+#brak_wart2 <- tibble(miss_var_summary(fixable_data))
+#brak_wart2
 #mamy 441 rzedów z jednym brakiem, 72 rzedy z dwoma brakami oraz 4 z trzema brakami
-miss_case_table(fixable_data)
+miss_case_table(HR)
 
 
 #wizualizacja braków
-vis_miss(fixable_data)
-vis_dat(fixable_data)
+vis_miss(HR)
+vis_dat(HR) # zrobić to po danych z wprowadzonymi brakami
 
 
-vis_miss(fixable_data, cluster = TRUE, sort_miss = TRUE)
+#vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
 
 hr_knn2 <- VIM::kNN(HR_imputowane)
 
@@ -42,10 +42,10 @@ HR_final <- HR_imputowane %>%
 
 
 #Wykresy
-install.packages("viridis")
-install.packages("RColorBrewer")
-library(viridis)
-library(RColorBrewer)
+#install.packages("viridis")
+#install.packages("RColorBrewer")
+#library(viridis)
+#library(RColorBrewer)
 
 #Odejścia w zależności od grup wiekowych
 
@@ -74,8 +74,8 @@ HR_final %>% group_by(Attrition, MaritalStatus) %>% summarize(N = n()) %>% mutat
   labs(x = "Attrition", y = "Count")
 
 
-library(ggplot2)
-library(dplyr)
+#library(ggplot2)
+#library(dplyr)
 #Średni miesięczny dochód według stanowiska
 HR_final %>%
 select(JobRole, MonthlyIncome) %>%
