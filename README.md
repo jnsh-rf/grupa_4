@@ -25,9 +25,9 @@ Co ciekawe, modele uczenia maszynowego można wdrożyć w celu przewidywania pot
 1. **Czyszczenie danych:**
    - [ ] Usunięcie zbędnych kolumn.
    - [ ] Zmiana nazwy kolumn.
-   - [ ] Usuwanie duplikatów.
+   - [x] Usuwanie duplikatów.
    - [ ] Czyszczenie poszczególnych kolumn.
-   - [ ] Usuwanie wartości NaN ze zbioru danych
+   - [x] Usuwanie wartości NaN ze zbioru danych
    - [ ] Wartości brakujące i odstające
    - [ ] Sprawdź więcej transformacji
 
