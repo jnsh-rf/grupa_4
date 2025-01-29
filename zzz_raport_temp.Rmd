@@ -1,12 +1,12 @@
 ---
 title: "Analiza danych - projekt zespołowy - HR"
 #subtitle: "Czyszczenie danych"
-author: "Paweł Gwozdowski, Wiktoria Itrych, Wiktoria Gawryszczak"
+author: "Gwozdowski, Itrych, Gawryszczak"
 date: Opublikowano `r format(Sys.time(), "%A %d %B %Y")`
 output:
   rmdformats::robobook:
     self_contained: true
-    thumbnails: true
+    thumbnails: false
     lightbox: true
     gallery: false
     highlight: "tango"
@@ -19,23 +19,28 @@ editor_options:
 fontsize: 12pt
 ---
 
-```{r setup}
-knitr::opts_chunk$set(
-	message = FALSE,
-	warning = FALSE,
-	include = FALSE
-)
+```{r setup, message = FALSE, warning = FALSE, include = FALSE}
 options(scipen = 999, digits=6)
+# mirror na Politechnice Warszawskiej
+# info z tej strony https://cran.r-project.org/mirrors.html
+options(repos = c(CRAN = "https://cran.mi2.ai/"))
+
+
+# gwarantuje jednakowe wyniki za każdym razem
+set.seed(42)
+
 
 # Lista bibliotek
 libraries <- c(
   "rmdformats", "naniar", "visdat", "viridisLite", "ggthemes", "ggrepel",
-  "deductive", "VIM", "simputation", "lumberjack", "RColorBrewer",
-  "dlookr", "xts", "quantmod", "ROCR", "Information", "knitr",
-  "readr", "tidyverse", "deducorrect", "rstatix", "ggcorrplot",
-  "kableExtra", "DT", "mice", "finalfit", "gridExtra", "caret", "janitor"
+  "VIM", "simputation", "RColorBrewer", "paletteer", "readr", "dlookr", 
+  "Information", "knitr", "hexbin", "readr", "tidyverse", "rstatix", "corrr", 
+  "ggcorrplot", "hrbrthemes", "kableExtra", "DT", "mice", "finalfit", "skimr",
+  "gridExtra", "caret", "janitor", "summarytools", "ggstatsplot", "viridisLite",
+  "gt", "gtsummary", "gtExtras"
+  #"modelsummary", "broom", "broom.mixed" # na wypadek budowy modeli
   
-  #, "tidylog"
+  #, "tidylog", # "gt", "ggforce", "gtsummary"
 )
 
 packages <- c("skimr", "GGally", "plotly", "randomForest", "e1071", "rpart", "xgboost", "h2o", "rpart.plot", "corrgram", "lightgbm", "psych", "scales", "treemap", "treemapify", "repr", "cowplot", "magrittr", "ggpubr", "plotrix", "forcats", "caTools", "tree", "rattle")
@@ -60,7 +65,7 @@ invisible(sapply(libraries, function(lib) {
 }))
 ```
 
-```{r dane, message=FALSE, warning=FALSE, include=FALSE}
+```{r dane___hide, message=FALSE, warning=FALSE, include=FALSE}
 HR <- read_csv("HR.csv")
 ```
 
@@ -77,17 +82,60 @@ dostrzec ukryte wzorce i trendy związane z pracownikami, umożliwiając podjęc
 się do poprawy efektywności organizacji i zmniejszenia kosztów. Niniejsze badanie eksploacyjne przeprowadzono na
 zestawie danych pochodzącym z działu HR.
 
-## Struktura i opis danych
+## Opis i struktura danych
 
 ```{r dane_tabela, echo=FALSE, paged.print=TRUE}
-kable(HR)
+#DT::datatable(HR, 
+#              options = list(
+#                dom = 'ltipr',  # Hide search bar, keep length menu & pagination
+#                pageLength = 10, # Default rows displayed
+#                lengthMenu = c(5, 10, 20, 50), # Dropdown for number of rows
+#                scrollX = TRUE   # Enable horizontal scrolling
+#              ),
+#              rownames = TRUE)  # Hide row numbers
+
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#:::::::::::::::::  NADAL NIE JEST IDEALNIE  ::::::::::::::::::::::::::::::::::::::::::::
+#:::::::::::::::::   ALE ZOSTAWIAM W CELU    ::::::::::::::::::::::::::::::::::::::::::::
+#:::::::::::::::::      REFERENCYJNYM        ::::::::::::::::::::::::::::::::::::::::::::
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+DT::datatable(
+  HR,
+  options = list(
+    dom = 'ltipr',  # Hide search bar, keep length menu & pagination
+    pageLength = 10,  # Default rows displayed
+    lengthMenu = c(5, 10, 20, 50),  # Dropdown for number of rows
+    scrollX = TRUE,  # Enable horizontal scrolling
+    fixedColumns = list(leftColumns = 1),  # Fix the first column when scrolling
+    rownames = TRUE,  # Show row names
+    columnDefs = list(
+      list(targets = "_all", render = JS(
+        "function(data, type, row, meta) {",
+        "  if (data === null || data === '') { return 'NA'; }",
+        "  return data;",
+        "}"))
+    )  # Display NA in a more explicit way
+  ),
+  rownames = TRUE  # Explicitly ensure row names are visible
+)
 ```
 
 Zbiór danych `HR` zawiera informacje dotyczące 1,470 obecnych i byłych pracowników zebranych w 35 kolumnach, w tym
 związane z ich satysfakcją z pracy, równowagą między życiem zawodowym a prywatnym, stażem pracy, doświadczeniem,
 wynagrodzeniem oraz innych cech demograficznych.
 
-## Walidacja danych
+```{r stat_op_brudne, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+skim(HR)
+```
+
+## Sprawdzenie spójności danych
+
+Spójne dane to technicznie poprawne dane, które nadają się do analizy statystycznej. Są to dane, w których brakujące
+wartości, wartości specjalne, (oczywiste) błędy i wartości odstające zostały usunięte, skorygowane lub przypisane. Dane
+są zgodne z ograniczeniami opartymi na rzeczywistej wiedzy na temat przedmiotu, który dane opisują.
+
+### Walidacja danych
 
 Przed przystąpieniem do dalszej analizy danych, niezwykle istotne jest upewnienie się, że dane spełniają określone
 założenia w celu zapewnienia ich poprawności i spójności. Poniżej przedstawiono kluczowe założenia, które należy
@@ -115,9 +163,10 @@ walidacja_danych <- function(HR) {
       missing = NA
     ),
     AttritionRule = if_else(
-      Attrition %in% c("No", "Yes"),
+      Attrition %in% c("Yes", "No"),
       TRUE,
-      FALSE,
+      NA, 
+      # FALSE, # coś knoci
       missing = NA
     ),
     DistanceFromHomeRule = if_else(
@@ -222,10 +271,80 @@ walidacja_danych <- function(HR) {
 }
 ```
 
-zauważyć możemy następujące problemy : występują braki (szerzej poniżej) oraz liczba firm w której ktos pracował
-wcześniej (to w dalszym kroku)
+```{r wyniki_walidacji___hide, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+podsumowanie_walidacji <- walidacja_danych(HR) %>%
+  select(ends_with("Rule")) %>%
+  mutate(across(everything(), ~ case_when(
+    is.na(.) ~ "NA",
+    . == TRUE ~ "Pass",
+    . == FALSE ~ "Fail"
+  ), .names = "Status_{.col}")) %>%
+  pivot_longer(
+    cols = starts_with("Status_"),
+    names_to = "Rule",
+    values_to = "Status",
+    names_prefix = "Status_"
+  )
 
-### Struktura danych
+wykres_walidacja <- podsumowanie_walidacji %>%
+  group_by(Rule, Status) %>%
+  summarize(Count = n(), .groups = "drop") %>%
+  mutate(Rule = gsub("Rule$", "", Rule)) %>%
+  pivot_wider(names_from = Status, values_from = Count, values_fill = list(Count = 0))
+
+wykres_walidacja_fin <- wykres_walidacja %>%
+  pivot_longer(cols = -Rule, names_to = "Status", values_to = "Count")
+
+wykres_walidacja_legenda <- wykres_walidacja_fin %>%
+  mutate(total_count = sum(Count)) %>%
+  group_by(Status) %>%
+  mutate(Percentage = sum(Count) / total_count * 100) %>%
+  summarize(Percentage = unique(Percentage)) %>%
+  ungroup() %>%
+  mutate(Label = paste0(Status, sprintf(" (%.1f%%)", Percentage))) %>%
+  pull(Label)
+
+# zmienić poniższe gdy dojdzie do renderu
+walidacja_rezultat <- wykres_walidacja %>%
+  mutate(
+    Total = `Fail` + `Pass` + `NA`,
+    `Fail %` = sprintf("%.1f%%", (`Fail` / Total) * 100),
+    `Pass %` = sprintf("%.1f%%", (`Pass` / Total) * 100),
+    `NA %` = sprintf("%.1f%%", (`NA` / Total) * 100)
+  ) %>%
+  select(Rule, `N Passed` = Pass, `N Failed` = Fail, `N NA` = `NA`, `Fail %`, `Pass %`, `NA %`) %>%
+  kable("html", escape = FALSE, align = "c") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+kolory_walidacja <- c("Fail" = "#FB9A99", "Pass" = "#B2DF8A", "NA" = "#FDBF6F")
+```
+
+```{r wyniki_walidacja_wykres, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(wykres_walidacja_fin, aes(x = Rule, y = Count, fill = Status)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = kolory_walidacja, labels = wykres_walidacja_legenda) +
+  theme_minimal() +
+  coord_flip() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "bottom",
+    legend.justification = "right",
+    legend.title = element_blank(),
+    plot.title = element_blank()
+  )
+```
+
+```{r wyniki_walidacji_rezultat, message=FALSE, warning=FALSE, paged.print=FALSE}
+walidacja_rezultat
+```
+
+zauważyć możemy następujące problemy : występują braki (szerzej poniżej) oraz liczba firm w której ktos pracował
+wcześniej (to w dalszym kroku),
+
+co przedstawia poniższy wykres
+
+### Struktura danych / Wykrywanie braków danych
 
 ```{r str_danych, echo=TRUE}
 glimpse(HR)
@@ -336,6 +455,11 @@ all_char_values <- list(
   val_9 = table(HR$OverTime)
 )
 
+# to też trzeba zinputować
+#HR_0 <- walidacja_danych(HR) %>%
+#  mutate(NumCompaniesWorked = if_else(NumCompaniesWorkedRule == FALSE, NA, NumCompaniesWorked)) %>%
+#  select(names(HR))
+
 #uproszczenie listy all_char_values
 kategorie <- lapply(all_char_values, names)
 
@@ -354,9 +478,16 @@ HR_factor <- HR %>%
 ## pózniej naprawić i uproscic kod
 
 numeric_HR <- HR %>%
-  mutate(Attrition = factor(Attrition, levels = kategorie$val_1)) %>%
-  mutate(across(where(is.factor), as.numeric)) %>%
-  select(where(is.numeric))
+  mutate(Attrition = factor(if_else(Attrition == "Yes", 1, 
+                             if_else(Attrition == "No", 0, NA_real_)))) %>%
+  mutate(across(where(is.factor), as.numeric)) %>%  
+  select(where(is.numeric))  # Keep only numeric columns
+
+  # cor_mat z pakietu rstatix wymaga by na 
+  # remove_constant()
+
+
+table(HR$Attrition, useNA = c("always"))
 
 macierz_kor_numeric <- cor_mat(
   numeric_HR,
@@ -365,25 +496,35 @@ macierz_kor_numeric <- cor_mat(
   conf.level = 0.95
 )
 
-macierz_kor_numeric
+DT::datatable(macierz_kor_numeric, 
+              options = list(
+                dom = 'ltipr',  # Hide search bar, keep length menu & pagination
+                pageLength = 10, # Default rows displayed
+                lengthMenu = c(5, 10, 20, 50), # Dropdown for number of rows
+                scrollX = TRUE   # Enable horizontal scrolling
+              ),
+              rownames = TRUE)  # Hide row numbers
 ```
 
-Przy tworzeniu macierzy korelacji dla zmiennych numerycznych uwzględniono dodatkowo zmienną **Attrition**, po jej
-uprzednim przekodowaniu na ***factor*** a następnie na ***numeric***, gdyż chcemy sprawdzić które zmienne są z nią
-najbardziej skorelowane.
+Podczas tworzenia macierzy korelacji dla zmiennych numerycznych, uwzględniono dodatkowo zmienną **Attrition**, która
+została uprzednio po jej uprzednim przekodowaniu na typ ***factor***, a następnie na ***numeric***, celem zbadania
+korelacji tej zmiennej z pozostałymi zmiennymi numerycznymi.
 
-Możemy zauważyć, iż dla niektórych zmiennych niepoliczona została wartość korelacji. Wynika to z użytej metody, tj.
-współczynnika korelacji Pearsona o wzorze:
+W wyniku obliczeń, w przypadku niektórych zmiennych, nie została obliczona wartość współczynnika korelacji. Wynika to z
+zastosowanej metody obliczeń, tj. współczynnika korelacji Pearsona, którego wzór jest następujący:
 
 $$
 r = \frac{{}\sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \overline{x})^2  \sum_{i=1}^{n}(y_i - \overline{y})^2}}
 $$
 
-Brak wartości dla macierzy korelacji wynika z faktu, iż mianownik nie może przyjąć wartości równej 0, co może przydarzyć
-się, gdy zmienna przyjmuje tylko jedną wartość. Właśnie z taką sytuacją mamy tutaj do czynienia, a tym samym zmienne te
-należałoby w następnym kroku usunąć.
+Brak wartości korelacji w takich przypadkach związany jest z sytuacją, w której mianownik równania przyjmuje wartość
+zerową. Tego typu sytuacja
+ma miejsce, gdy którakolwiek ze zmiennych przyjmuje jedną stałą wartość (brak zmienności), co skutkuje zerową wariancją.
+W takich przypadkach
+obliczenie współczynnika korelacji staje się niemożliwe, a tym samym zmienne te należy usunąć, gdyż nie wnoszą one
+żadnej dodatkowej informacji do dalszej analizy danych.
 
-### Graficzna prezentacja korelacji
+### Graficzna prezentacja korelacji - okreslenie zmienncyh wykorzystanych do imputacji
 
 ```{r echo=TRUE}
 ggcorrplot(macierz_kor_numeric,
@@ -395,7 +536,7 @@ ggcorrplot(macierz_kor_numeric,
            legend.title = "Korelacja")
 ```
 
-```{r zn_naj_skor, echo=TRUE}
+```{r zn_naj_skor, message=FALSE, warning=FALSE, include=FALSE}
 mxkor_missing_var <- macierz_kor_numeric %>%
   column_to_rownames("rowname")
 
@@ -417,6 +558,16 @@ mxkor_moi <- mxkor_missing_var %>%
   arrange(desc(abs(MonthlyIncome))) %>%
   filter(MonthlyIncome != 1)
 
+mxkor_ncw <- mxkor_missing_var %>%
+  select(NumCompaniesWorked) %>%
+  na.omit() %>%
+  arrange(desc(abs(NumCompaniesWorked))) %>%
+  filter(NumCompaniesWorked != 1)
+```
+
+```{r naj_skor_tabela, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+kor_brak_wart_sort 
+  cbind
 ```
 
 Na podstawie macierzy korelacji możemy stwierdzić, że zmienna **Age** skorelowana jest najsilniej z trzema zmiennymi -
@@ -428,22 +579,25 @@ Zmienna **Attrition** natomiast nie jest zbyt mocno skorelowana z żadną ze zmi
 znajdują się w przedziale [0,0052 - 0,18]. Przyjmiemy tym samym do imputacji wszystkie możliwe zmienne numeryczne,
 pomijając zmienne, w których występują braki.
 
-## Imputacja danych
+## Czyszczenie Danych
+
+## Imputacja brakujących danych
+
+Imputacja to proces szacowania lub wyprowadzania wartości dla pól, w których brakuje danych.
 
 ### Imputacja metodą drzew losowych (RPART)
 
 ```{r rpart, echo=TRUE}
-im_age_rpart <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "rpart"), 0)
+im_age_rpart <- round_half_up(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "rpart"), 0)
 
 nazw_kol_hr <- colnames(numeric_HR) %>% 
   setdiff("Attrition")
 
 #znales sposób na zagniezdzenie nazw_kol_hr w im_att_rpart
-#install.packages("clipr")
-#library(clipr)
+
 writeClipboard(nazw_kol_hr)
 
-im_att_rpart <- round(imputate_na(numeric_HR, Attrition, 
+im_att_rpart <- round_half_up(imputate_na(numeric_HR, Attrition, 
                                   yvar = c("DailyRate", "DistanceFromHome", "Education", "EmployeeCount",
                                            "EmployeeNumber", "EnvironmentSatisfaction", "HourlyRate",
                                            "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
@@ -454,7 +608,9 @@ im_att_rpart <- round(imputate_na(numeric_HR, Attrition,
                                            "YearsWithCurrManager"), 
                                   method = "rpart"), 0)
 
-im_moi_rpart <- round(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "rpart"), 0)
+im_moi_rpart <- round_half_up(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "rpart"), 0)
+
+im_ncw_rpart <- round_half_up(imputate_na(numeric_HR, NumCompaniesWorked, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "rpart"), 0)
 
 plot(im_age_rpart)
 plot(im_att_rpart)
@@ -464,9 +620,9 @@ plot(im_moi_rpart)
 ### Imputacja metodą Multivariate Imputation by Chained Equations (mice)
 
 ```{r mice, echo=TRUE}
-im_age_mice <- round(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0)
+im_age_mice <- round_half_up(imputate_na(numeric_HR, Age, yvar = c("TotalWorkingYears", "JobLevel", "MonthlyIncome"), method = "mice"), 0)
 
-im_att_mice <- round(imputate_na(numeric_HR, Attrition, 
+im_att_mice <- round_half_up(imputate_na(numeric_HR, Attrition, 
                                   yvar = c("DailyRate", "DistanceFromHome", "Education", "EmployeeCount",
                                            "EmployeeNumber", "EnvironmentSatisfaction", "HourlyRate",
                                            "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
@@ -477,7 +633,9 @@ im_att_mice <- round(imputate_na(numeric_HR, Attrition,
                                            "YearsWithCurrManager"), 
                                   method = "mice"), 0)
 
-im_moi_mice <- round(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "mice"), 0)
+im_moi_mice <- round_half_up(imputate_na(numeric_HR, MonthlyIncome, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "mice"), 0)
+
+im_ncw_mice <- round_half_up(imputate_na(numeric_HR, NumCompaniesWorked, yvar = c("JobLevel", "TotalWorkingYears", "YearsAtCompany", "Age"), method = "mice"), 0)
 
 plot(im_age_mice)
 plot(im_att_mice)
@@ -489,9 +647,9 @@ plot(im_moi_mice)
 ```{r kNN, echo=TRUE}
 hr_knn <- VIM::kNN(numeric_HR)
 
-im_age_knn <- hr_knn$Age
-im_att_knn <- hr_knn$Attrition
-im_moi_knn <- hr_knn$MonthlyIncome
+im_age_knn <- round_half_up(hr_knn$Age, 0)
+im_att_knn <- round_half_up(hr_knn$Attrition, 0)
+im_moi_knn <- round_half_up(hr_knn$MonthlyIncome, 0)
 
 ggplot() +
   geom_density(data = numeric_HR, aes(x = Age, color = "Original"), size = 1) +
