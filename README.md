@@ -28,23 +28,23 @@ Co ciekawe, modele uczenia maszynowego można wdrożyć w celu przewidywania pot
    - [x] Usuwanie duplikatów.
    - [x] Czyszczenie poszczególnych kolumn.
    - [x] Usuwanie wartości NaN ze zbioru danych
-   - [ ] Wartości brakujące i odstające
-   - [ ] Sprawdź więcej transformacji
+   - [x] Wartości brakujące i odstające
+   - [x] Sprawdź więcej transformacji
 
 2. **Wizualizacja danych:**
    - [x] Wykreślenie mapy korelacji dla wszystkich zmiennych numerycznych
-   - [ ] Nadgodziny
-   - [ ] Stan cywilny
-   - [ ] Rola zawodowa
-   - [ ] Płeć
-   - [ ] Wykształcenie Dziedzina
-   - [ ] Dział
-   - [ ] Podróż służbowa
-   - [ ] Związek między nadgodzinami a wiekiem
-   - [ ] Łączna liczba lat pracy
-   - [ ] Poziom wykształcenia
-   - [ ] Liczba przepracowanych firm
-   - [ ] Odległość od domu
+   - [x] Nadgodziny
+   - [x] Stan cywilny
+   - [x] Rola zawodowa
+   - [x] Płeć
+   - [x] Wykształcenie Dziedzina
+   - [x] Dział
+   - [x] Podróż służbowa
+   - [x] Związek między nadgodzinami a wiekiem
+   - [x] Łączna liczba lat pracy
+   - [x] Poziom wykształcenia
+   - [x] Liczba przepracowanych firm
+   - [x] Odległość od domu
 
 ### Kryteria oceny projektu
 

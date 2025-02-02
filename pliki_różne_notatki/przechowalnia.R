@@ -119,3 +119,5 @@ cbind(im_age_mice, im_att_mice, im_moi_knn) %>%
                             ifelse(Attrition == 2, "Yes", Attrition)))
 
 view(HR_imputowane)
+
+# nie chce sie renderować
