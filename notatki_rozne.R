@@ -27,9 +27,20 @@ ggcorrplot(macierz_kor_numeric,
            legend.title = "Korelacja")
 
 library(corrplot)
-corrplot(cor(macierz_kor_numeric), method = "square", order = "hclust",
+corrplot(, method = "square", #order = "hclust",
          addrect = 3, tl.col = "black", tl.srt = 45,
          col = colorRampPalette(c("tomato2", "white", "#01A9DB"))(200))
+
+library(corrplot)
+
+corrplot(
+  macierz_kor_numeric_mx,
+  method = "color",
+  type = "upper",
+  col = colorRampPalette(c("#4477AA", "white", "#BB4444"))(200),
+  insig = "blank",
+  tl.cex  = 0.9
+)
 
 
 corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", tl.srt = 45)

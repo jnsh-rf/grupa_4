@@ -1,53 +1,10 @@
-#sum(is.na(HR_imputowane))
-#sum(is.na(fixable_data))
+#HR_final <- HR_imputowane %>%
+#  cbind(im_NumCompaniesWorked_knn, im_TotalWorkingYears_knn, im_YearsAtCompany_knn) %>%
+#  mutate(
+#    NumCompaniesWorked = im_NumCompaniesWorked_knn,
+#    TotalWorkingYears = im_TotalWorkingYears_knn,
+#   YearsAtCompany = im_YearsAtCompany_knn)
 
-### wykres do wizualizacji braków
-VIM::aggr(HR)
-# alternatywa dla
-# missplot_finalfit <- HR %>% missing_pattern("Age", explain_u)
-
-
-
-#wszystkie brakujące obserwacje - brakuje 197
-n_miss(HR)
-#udział brakujących w całości - 0.0116035
-prop_miss(HR)
-#tabela podsumowująca braki dla wszystkich zmiennych
-#brak_wart2 <- tibble(miss_var_summary(fixable_data))
-#brak_wart2
-#mamy 441 rzedów z jednym brakiem, 72 rzedy z dwoma brakami oraz 4 z trzema brakami
-miss_case_table(HR)
-
-
-#wizualizacja braków
-vis_miss(HR)
-vis_dat(HR) # zrobić to po danych z wprowadzonymi brakami
-
-
-#vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
-
-hr_knn2 <- VIM::kNN(HR_imputowane)
-
-im_NumCompaniesWorked_knn <- hr_knn$NumCompaniesWorked
-im_TotalWorkingYears_knn <- hr_knn$TotalWorkingYears
-im_YearsAtCompany_knn <- hr_knn$YearsAtCompany
-
-HR_final <- HR_imputowane %>%
-  cbind(im_NumCompaniesWorked_knn, im_TotalWorkingYears_knn, im_YearsAtCompany_knn) %>%
-  mutate(
-    NumCompaniesWorked = im_NumCompaniesWorked_knn,
-    TotalWorkingYears = im_TotalWorkingYears_knn,
-    YearsAtCompany = im_YearsAtCompany_knn)
-
-
-
-#Wykresy
-#install.packages("viridis")
-#install.packages("RColorBrewer")
-#library(viridis)
-#library(RColorBrewer)
-
-#Odejścia w zależności od grup wiekowych
 
 ggplot(HR_final, aes(x=Age, fill=Attrition, color=Attrition)) +
   geom_density(position="identity", alpha=0.5) + 
@@ -78,7 +35,7 @@ HR_final %>% group_by(Attrition, MaritalStatus) %>% summarize(N = n()) %>% mutat
 #library(dplyr)
 #Średni miesięczny dochód według stanowiska
 HR_final %>%
-select(JobRole, MonthlyIncome) %>%
+  select(JobRole, MonthlyIncome) %>%
   group_by(JobRole) %>%
   summarize(mean = round(mean(MonthlyIncome), 1)) %>%
   ggplot(aes(x = reorder(JobRole, -mean), y = mean, fill = mean)) + 
@@ -133,3 +90,53 @@ ggplot(data = GenderDistributionLong, aes(x = Department, y = Percentage, fill =
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.title = element_text(size = 14)
   )
+
+
+
+#sum(is.na(HR_imputowane))
+#sum(is.na(fixable_data))
+
+### wykres do wizualizacji braków
+#VIM::aggr(HR)
+# alternatywa dla
+# missplot_finalfit <- HR %>% missing_pattern("Age", explain_u)
+
+
+
+#wszystkie brakujące obserwacje - brakuje 197
+#n_miss(HR)
+#udział brakujących w całości - 0.0116035
+#prop_miss(HR)
+#tabela podsumowująca braki dla wszystkich zmiennych
+#brak_wart2 <- tibble(miss_var_summary(fixable_data))
+#brak_wart2
+#mamy 441 rzedów z jednym brakiem, 72 rzedy z dwoma brakami oraz 4 z trzema brakami
+#miss_case_table(HR)
+
+
+#wizualizacja braków
+#vis_miss(HR)
+#vis_dat(HR) # zrobić to po danych z wprowadzonymi brakami
+
+
+#vis_miss(HR, cluster = TRUE, sort_miss = TRUE)
+
+#hr_knn2 <- VIM::kNN(HR_imputowane)
+#
+#im_NumCompaniesWorked_knn <- hr_knn$NumCompaniesWorked
+#im_TotalWorkingYears_knn <- hr_knn$TotalWorkingYears
+#im_YearsAtCompany_knn <- hr_knn$YearsAtCompany
+#
+
+#
+#
+#
+#Wykresy
+#install.packages("viridis")
+#install.packages("RColorBrewer")
+#library(viridis)
+#library(RColorBrewer)
+
+#Odejścia w zależności od grup wiekowych
+
+

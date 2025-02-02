@@ -23,17 +23,16 @@ Co ciekawe, modele uczenia maszynowego można wdrożyć w celu przewidywania pot
 ### **Zadania do wykonania:**
 
 1. **Czyszczenie danych:**
-   - [ ] Usunięcie zbędnych kolumn.
-   - [ ] Zmiana nazwy kolumn.
+   - [x] Usunięcie zbędnych kolumn.
+   - [x] Zmiana nazwy kolumn.
    - [x] Usuwanie duplikatów.
-   - [ ] Czyszczenie poszczególnych kolumn.
+   - [x] Czyszczenie poszczególnych kolumn.
    - [x] Usuwanie wartości NaN ze zbioru danych
    - [ ] Wartości brakujące i odstające
    - [ ] Sprawdź więcej transformacji
 
-
 2. **Wizualizacja danych:**
-   - [ ] Wykreślenie mapy korelacji dla wszystkich zmiennych numerycznych
+   - [x] Wykreślenie mapy korelacji dla wszystkich zmiennych numerycznych
    - [ ] Nadgodziny
    - [ ] Stan cywilny
    - [ ] Rola zawodowa
@@ -51,7 +50,7 @@ Co ciekawe, modele uczenia maszynowego można wdrożyć w celu przewidywania pot
 
 0-2 punkty: praca zespołowa (uwaga: 0 punktów za wielokrotne kasowanie postępów prac, branchy, repo)
 
-0-3 punkty: estetyka projektu, opracowanie dokumentu technicznego Markdown, komentarze, wnioski. 
+0-3 punkty: estetyka projektu, opracowanie dokumentu technicznego Markdown, komentarze, wnioski.
 
 0-3 punkty: porządkowanie, czyszczenie danych
 
