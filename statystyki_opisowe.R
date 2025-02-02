@@ -37,10 +37,10 @@ ggbetweenstats(data = HR_filtered, x = Attrition, y = MonthlyIncome,
 
 
 
-# ANOVA: Czy długość pracy w firmie różni się między działami?
-# Czy lata pracy zależą od działu?
-ggbetweenstats(data = HR_filtered, x = Department, y = YearsAtCompany, 
-               title = "staż w firmie a dział pracy")
+# ANOVA: Czy satysfakcja z pracy w firmie różni się między działami?
+# Czy satysfakcja z pracy zależą od działu?
+ggbetweenstats(data = HR_filtered, x = Department, y = JobSatisfaction, 
+               title = "satysfakcja a dział pracy w firmie")
 
 
 
@@ -50,10 +50,10 @@ ggscatterstats(data = HR_filtered, x = YearsAtCompany, y = MonthlyIncome)
  
 
 
-#Struktura odejść w różnych działach
-#Jaki procent pracowników odchodzi z każdego działu?
-ggpiestats(data = HR_filtered, x = Department, y = Attrition,
-           title =  "odejścia a dział firmy") +
+#Struktura odejść wg częstotliwości podróży biznesowych
+ggpiestats(data = HR_filtered, x = BusinessTravel, y = Attrition,
+           title =  "delegacje a odejścia z firmy") +
   scale_fill_manual(values = c("#669bbc", "#c1121f", "#fdf0d5")) +
   theme_minimal()
+
 
